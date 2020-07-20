@@ -12,7 +12,7 @@ class RoomResponseEstimator(object):
     Angelo Farina
     """
 
-    def __init__(self, duration=10.0, low=100.0, high=15000.0, Fs=44100.0):
+    def __init__(self, duration=10.0, low=20.0, high=20000.0, Fs=50000.0):
         self.Fs = Fs
 
         # Total length in samples

@@ -43,13 +43,14 @@ if __name__ == "__main__":
     # Just reuse previous measurements.
     if options.reuse_wav:
         ir_file = options.reuse_wav
+        
 
     else:
         print("Reuse previous measurements in this module, invoke --reuse _file_ (-r)")
 
-
+    ir_fl = wavio.read( 'ir1_-_iringresso_new.wav' )
     # Get the result of measurement from wav file.
-    ir_fl = wavio.read( ir_file )
+    # ir_fl = wavio.read( ir_file )
     ir = ir_fl.data[0:,0]/math.pow(2.0, ir_fl.sampwidth*8-1)
 
     # Estimate Room Response from the raw signal.
