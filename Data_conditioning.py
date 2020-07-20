@@ -105,7 +105,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' down'] = float(title_metadata[14])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[15]] = int(title_metadata[16])-1
         if len(title_metadata) == 18:
-            dictOfDF.get(dataSet[:-4]).attrs['Run Number'] = int(title_metadata[17])
+            # dictOfDF.get(dataSet[:-4]).attrs['Run Number'] = int(title_metadata[17])
+            dictOfDF.get(dataSet[:-4]).attrs['Notes'] = title_metadata[17]
 
         print('makeDictofDF {} of {}' .format(count+1, len(dataOrganizationDict.get(subfolderName))))
     return dictOfDF
