@@ -53,8 +53,7 @@ def getFileOrg(main_data_path):
         values are a list the data files in their respective subfolders
 
     """
-    ##### Set path for overall folder with subfolders full of data #####
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200701-electrical, optical, and acoustical measurements')
+    
     
     ##### Determine subfolders in main collection folder #####
     data_directories = [name for name in os.listdir(main_data_path) if os.path.isdir(main_data_path/name)]
@@ -139,8 +138,7 @@ def getSingleInstance(dictOfDF):
         dictOfDF_single.get(key)['Time'] = dictOfDF_single.get(key)['Time']-dictOfDF_single.get(key)['Time'].iloc[0]
         dictOfDF_single.get(key)['V_elec+'] = dictOfDF_single.get(key)['V_elec+'] * 100
         dictOfDF_single.get(key)['V_elec-'] = dictOfDF_single.get(key)['V_elec-'] * 100
-        dictOfDF_single.get(key)['D_laser'] = dictOfDF_single.get(key)['D_laser']*1000
-        ## add metadata for each sweep depending on filename, key. bias, sample rate, input signal amplitude, freq range
+        dictOfDF_single.get(key)['D_laser'] = dictOfDF_single.get(key)['D_laser'] * 1000
         
         
         
@@ -203,6 +201,136 @@ def makeRevFilters(dictOfDF_single, fs = 50000, low = 20, high = 20000, duration
     return dictOfDF_single
 
 
+
+def normalize(dictOfDF_single):
+    """
+    
+
+    Parameters
+    ----------
+    dictOfDF_single : dictionary of DataFrames
+        Contains single sweep data raw values in float32
+
+    Returns
+    -------
+    dictOfDF_norm : dictionary of DataFrames
+        Contains single sweep data with normalized float32 values
+
+    """
+    for count, dataSet in enumerate(dataOrganizationDict.get(subfolderName)):
+        # save normalized 
+        #V_ACbias
+        V_ACbias_norm = dictOfDF_single.get(dataSet[:-4])['V_ACbias']/dictOfDF_single.get(dataSet[:-4])['V_ACbias'].abs().max()
+        #V_elec+
+        V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']/dictOfDF_single.get(dataSet[:-4])['V_elec+'].abs().max()
+        #V_elec-
+        V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']/dictOfDF_single.get(dataSet[:-4])['V_elec-'].abs().max()
+        #D_laser
+        D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']/dictOfDF_single.get(dataSet[:-4])['D_laser'].abs().max()
+        #Mic_out
+        V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']/dictOfDF_single.get(dataSet[:-4])['Mic_out'].abs().max()
+        
+        # save normalized 
+        dictOfDF_single.get(dataSet[:-4])['V_ACbias'] = V_ACbias_norm*.5
+        dictOfDF_single.get(dataSet[:-4])['V_elec+'] = V_elec_p_norm*.5
+        dictOfDF_single.get(dataSet[:-4])['V_elec-'] = V_elec_n_norm*.5
+        dictOfDF_single.get(dataSet[:-4])['D_laser'] = D_laser_norm*.5
+
+    return dictOfDF_single
+
+
+
+    ##### Creates a folder for each of the datasets (entries in dictOfDF) with a .wav file for each channel #####
+    # saveWAV(dictOfDF_single, main_data_path, subfolderName)
+def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict):
+    """
+    
+
+    Parameters
+    ----------
+    dictofDF_single : dictionary of DataFrames
+        Contains single sweep data 
+    main_data_path : pathlib type path
+        Path to main folder with subfolders full of data
+    subfolderName : String
+        name of dataset that is to be processed. 
+    dataOrganizationDict : dictionary of lists. 
+        keys are subfolders of main data directory;
+        values are lists of all files in the subfolders
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    
+    for count, dataSet in enumerate(dataOrganizationDict.get(subfolderName)):
+        os.mkdir(main_data_path/subfolderName/dataSet[:-4])
+        # get every dataseries out of the dataframe and normalize them. 
+        TargetDir = str(main_data_path/subfolderName/dataSet[:-4])+'\\'
+        fs = dictOfDF_single.get(dataSet[:-4]).attrs['fs']
+        # fs = 48000
+        
+        
+        #V_ACbias
+        V_ACbias_norm = dictOfDF_single.get(dataSet[:-4])['V_ACbias']
+        write(TargetDir+'V_ACbias_norm.wav', fs, V_ACbias_norm)
+        #V_elec+
+        V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']
+        write(TargetDir+'V_elec_p_norm.wav', fs, V_elec_p_norm)
+        #V_elec-
+        V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']
+        write(TargetDir+'V_elec_n_norm.wav', fs, V_elec_n_norm)
+        #D_laser
+        D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
+        write(TargetDir+'D_laser_norm.wav', fs, D_laser_norm)
+        #Mic_out
+        V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
+        write(TargetDir+'Mic_out_norm.wav', fs, V_Mic_out_norm)
+
+
+def insertTiming(dictOfDF_norm):
+    """
+    
+
+    Parameters
+    ----------
+    dictOfDF_norm : dictionary of DataFrames
+        Contains single sweep data with normalized float32 values
+
+    Returns
+    -------
+    dictOfDF_norm : dictionary of DataFrames
+        Contains single sweep data with normalized float32 values 
+        with timing references added to V_ACbias and D_laser from 
+        V_elec- series
+
+    """
+
+    
+    for count, key in enumerate(dictOfDF_norm):
+
+        # finds index where the timing signal ends/begins for the front/rear timing signal
+        timingSig_index_front = int(dictOfDF_norm.get(key)[dictOfDF_norm.get(key)['V_elec-'].gt(0.3)].index[0]+dictOfDF_norm.get(key).attrs['fs']*.5)
+        timingSig_index_back = dictOfDF_norm.get(key)['V_elec-'].shape[0] - int(dictOfDF_norm.get(key)[dictOfDF_norm.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
+                                                                                                    .gt(0.3)].index[0]+dictOfDF_norm.get(key).attrs['fs']*.5)
+        
+        # gets timing signal from V_elec- and copies and pastes it into the other sweeps without significant beginning sweeps
+        timingSig_front = dictOfDF_norm.get(key)['V_elec-'][:timingSig_index_front]
+        timingSig_back = dictOfDF_norm.get(key)['V_elec-'][timingSig_index_back:]
+        
+        
+        dictOfDF_norm.get(key)['V_ACbias'][:timingSig_index_front] = timingSig_front/timingSig_front.abs().max()*.5
+        dictOfDF_norm.get(key)['D_laser'][:timingSig_index_front] = timingSig_front/timingSig_front.abs().max()*.5
+        
+        dictOfDF_norm.get(key)['V_ACbias'][timingSig_index_back:] = timingSig_back/timingSig_back.abs().max()*.5
+        dictOfDF_norm.get(key)['D_laser'][timingSig_index_back:] = timingSig_back/timingSig_back.abs().max()*.5
+        
+        print('insertTiming {} of {}'.format(count+1, len(dictOfDF_norm)))
+        
+    return dictOfDF_norm
+
 # def averageData(dataType = 'sweep', )
 
 #%%
@@ -226,50 +354,35 @@ if __name__ == '__main__':
     print('Datasets are grouped in the following subfolders: \n' + ', \n'.join(dataOrganizationDict.keys()))
     subfolderName = input('Please select and type out a dataset to analyze from above: \n\n')
     dictOfDF = makeDictofDF(dataOrganizationDict, subfolderName)
+    dictOfDF_single = dictOfDF
     
+    ##### normalize all data #####
+    dictOfDF_norm = normalize(dictOfDF_single)
+    ##### Add timing to data without clear timing signals #####
+    dictOfDF_timed = insertTiming(dictOfDF_norm)
+    #%%
+    saveWAV(dictOfDF_timed, main_data_path, subfolderName, dataOrganizationDict)
 
-    ##### Downsizes full dataset to a single sweep for each run and starts it at beginning of sweep #####
-    dictOfDF_single = getSingleInstance(dictOfDF)
+
+#%%
+
+
+          
+
+
+
+
+    # ##### Downsizes full dataset to a single sweep for each run and starts it at beginning of sweep #####
+    # dictOfDF_single = getSingleInstance(dictOfDF)
     
-    ##### Creates reverse filter and adds it to dictionary of DataFrames #####
-    dictOfDF_revFilt = makeRevFilters(dictOfDF_single)
-    
-#%% 
-    ##### Creates a folder for each of the datasets (entries in dictOfDF) with a .wav file for each channel #####
-    # saveWAV(dictOfDF_single, main_data_path, subfolderName)
-    # def saveWAV(dictofDF, main_data_path, subfolderName):
-        
-for count, dataSet in enumerate(dataOrganizationDict.get(subfolderName)):
-    os.mkdir(main_data_path/subfolderName/dataSet[:-4])
-    # get every dataseries out of the dataframe and normalize them. 
-    TargetDir = str(main_data_path/subfolderName/dataSet[:-4])+'\\'
-    fs = dictOfDF_single.get(dataSet[:-4]).attrs['fs']
-    fs = 48000
-    
-    #v_input
-    V_input_norm = dictOfDF_single.get(dataSet[:-4])['V_input']/dictOfDF_single.get(dataSet[:-4])['V_input'].abs().max()
-    write(TargetDir+'V_input_norm.wav', fs, V_input_norm)
-    #V_ACbias
-    V_ACbias_norm = dictOfDF_single.get(dataSet[:-4])['V_ACbias']/dictOfDF_single.get(dataSet[:-4])['V_ACbias'].abs().max()
-    write(TargetDir+'V_ACbias_norm.wav', fs, V_ACbias_norm)
-    #V_elec+
-    V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']/dictOfDF_single.get(dataSet[:-4])['V_elec+'].abs().max()
-    write(TargetDir+'V_elec_p_norm.wav', fs, V_elec_p_norm)
-    #V_elec-
-    V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']/dictOfDF_single.get(dataSet[:-4])['V_elec-'].abs().max()
-    write(TargetDir+'V_elec_n_norm.wav', fs, V_elec_n_norm)
-    #D_laser
-    V_D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']/dictOfDF_single.get(dataSet[:-4])['D_laser'].abs().max()
-    write(TargetDir+'D_laser_norm.wav', fs, V_D_laser_norm)
-    #Mic_out
-    V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']/dictOfDF_single.get(dataSet[:-4])['Mic_out'].abs().max()
-    write(TargetDir+'Mic_out_norm.wav', fs, V_Mic_out_norm)
+    # ##### Creates reverse filter and adds it to dictionary of DataFrames #####
+    # dictOfDF_revFilt = makeRevFilters(dictOfDF_single)
     
 
     
     #%% for plotting frequency spectra
     
-    key = 'S8_Vrms_35.3_bias_600_freq_20_20000_sweep_log_fs_50000_duration_10_0_Nsweeps_4'
+    key = 's8_Vrms_35.3_bias_600_freq_20_20000_sweep_log_fs_48000_duration_30_0_Nsweeps_1'
     I = fftconvolve( dictOfDF_revFilt.get(key)['V_ACbias'], dictOfDF_revFilt.get(key)['V_input_rev'].iloc[::-1].reset_index(drop=True), mode = 'full')
     I = I[dictOfDF_revFilt.get(key)['V_input_rev'].shape[0]:dictOfDF_revFilt.get(key)['V_input_rev'].shape[0]*2+1]
     Ifft = fft(I)
@@ -289,7 +402,7 @@ for count, dataSet in enumerate(dataOrganizationDict.get(subfolderName)):
     #%% for plotting laser and bias data on the same plot and mic data separately. 
     # def plotTimeData(dataDict):
         
-for count, key in enumerate(dictOfDF_revFilt):
+for count, key in enumerate(dictOfDF):
     
     Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
     V_D_pltax = Vbias_D_laserplt.add_subplot(111)
