@@ -28,7 +28,6 @@ import matplotlib
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.fftpack import fft, ifft
 from scipy.signal import fftconvolve, convolve
 from scipy.io.wavfile import write
