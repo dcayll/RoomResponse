@@ -88,8 +88,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
     for count, dataSet in enumerate(dataOrganizationDict.get(subfolderName)):
         # print(dataSet)
         dictOfDF[dataSet[:-4]] = pd.read_csv(main_data_path/subfolderName/dataSet, sep = '\t', header = None)
-        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_input', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Trigger', 'Mic_out']
-        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
+        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_input', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Trigger', 'Mic_out']
+        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
         title_metadata = dataSet[:-4].split('_') # turn title into list of strings with dataset information
         
         # populate metadata from title into attrs attribute dictionary
@@ -218,7 +218,7 @@ def makeRevFilters(dictOfDF_single, fs = 50000, low = 20, high = 20000, duration
 if __name__ == '__main__':
     
     ##### Change to path that contains a folder with subfolders full of .txt datafiles #####
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200720 - REW Aided sweeps')
+    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200701-electrical, optical, and acoustical measurements')
     
     ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
     dataOrganizationDict = getFileOrg(main_data_path)
