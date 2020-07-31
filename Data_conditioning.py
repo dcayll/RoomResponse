@@ -226,14 +226,14 @@ if __name__ == '__main__':
     print('Datasets are grouped in the following subfolders: \n' + ', \n'.join(dataOrganizationDict.keys()))
     subfolderName = input('Please select and type out a dataset to analyze from above: \n\n')
     dictOfDF = makeDictofDF(dataOrganizationDict, subfolderName)
-    
+    dictOfDF_single = dictOfDF
 
-    ##### Downsizes full dataset to a single sweep for each run and starts it at beginning of sweep #####
-    dictOfDF_single = getSingleInstance(dictOfDF)
+
     
-    ##### Creates reverse filter and adds it to dictionary of DataFrames #####
-    dictOfDF_revFilt = makeRevFilters(dictOfDF_single)
-    
+    # ##### normalize all data #####
+    # dictOfDF_norm = normalize(dictOfDF_single)
+    # ##### Add timing to data without clear timing signals #####
+    # dictOfDF_timed = insertTiming(dictOfDF_norm)
 #%% 
     ##### Creates a folder for each of the datasets (entries in dictOfDF) with a .wav file for each channel #####
     # saveWAV(dictOfDF_single, main_data_path, subfolderName)
@@ -289,21 +289,21 @@ for count, dataSet in enumerate(dataOrganizationDict.get(subfolderName)):
     #%% for plotting laser and bias data on the same plot and mic data separately. 
     # def plotTimeData(dataDict):
         
-for count, key in enumerate(dictOfDF_revFilt):
+for count, key in enumerate(dictOfDF_single):
     
     Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
     V_D_pltax = Vbias_D_laserplt.add_subplot(111)
-    V_ACbiasAx = dictOfDF_revFilt.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True, 
+    V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True, 
                                               title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
     V_ACbiasAx.set_ylabel('Bias Voltage (V)')
     V_ACbiasAx.set_xlabel('Time (s)')
-    D_laserAx = dictOfDF_revFilt.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
+    D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
     D_laserAx.set_ylabel('Center Displacement (um)')
     
     
     Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
     Mic_pltax = Mic_outplt.add_subplot(111)
-    Mic_outAx = dictOfDF_revFilt.get(key).plot(x = 'Time', y = 'Mic_out', grid=True, 
+    Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True, 
                                               title='Mic Output for {}'.format(key), ax = Mic_pltax)
     Mic_outAx.set_ylabel('Mic Output (V)')
     Mic_outAx.set_xlabel('Time (s)')
