@@ -101,11 +101,12 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[5]+ ' stop'] = float(title_metadata[7])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[8]+ ' type'] = title_metadata[9]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[10]] = int(title_metadata[11])
-        dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' up'] = float(title_metadata[13])
-        dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' down'] = float(title_metadata[14])
-        dictOfDF.get(dataSet[:-4]).attrs[title_metadata[15]] = int(title_metadata[16])-1
-        if len(title_metadata) == 18:
-            dictOfDF.get(dataSet[:-4]).attrs['Run Number'] = int(title_metadata[17])
+        dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
+        # dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' up'] = float(title_metadata[13])
+        # dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' down'] = float(title_metadata[14])
+        # dictOfDF.get(dataSet[:-4]).attrs[title_metadata[15]] = int(title_metadata[16])-1
+        # if len(title_metadata) == 13:
+        #     dictOfDF.get(dataSet[:-4]).attrs['Run Number'] = int(title_metadata[17])
 
         print('makeDictofDF {} of {}' .format(count+1, len(dataOrganizationDict.get(subfolderName))))
     return dictOfDF
@@ -131,7 +132,7 @@ def getSingleInstance(dictOfDF):
     for count, key in enumerate(dictOfDF):
         # select a single round of the sweep to process, selected by when trigger goes from digital 0 to 1
         fs = dictOfDF.get(key).attrs['fs']
-        T = dictOfDF.get(key).attrs['duration up']
+        T = 21.8#dictOfDF.get(key).attrs['duration up']
         startLoc = dictOfDF.get(key).Trigger.diff()[1:int(fs*T)].idxmax(axis=0)
         dictOfDF_single.update({key: dictOfDF.get(key).iloc[startLoc: startLoc + int(fs*T)].reset_index(drop=True)})
         # processing data to meaningful values. time start at 0, electrodes to real V, D_laser to um
