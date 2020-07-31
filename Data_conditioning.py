@@ -101,7 +101,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[5]+ ' stop'] = float(title_metadata[7])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[8]+ ' type'] = title_metadata[9]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[10]] = int(title_metadata[11])
-        dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
+        if len(title_metadata) == 13:
+            dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
         # dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' up'] = float(title_metadata[13])
         # dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' down'] = float(title_metadata[14])
         # dictOfDF.get(dataSet[:-4]).attrs[title_metadata[15]] = int(title_metadata[16])-1
@@ -259,8 +260,8 @@ for count, dataSet in enumerate(dataOrganizationDict.get(subfolderName)):
     #%% for plotting frequency spectra
     
     key = 'S8_Vrms_35.3_bias_600_freq_20_20000_sweep_log_fs_50000_duration_10_0_Nsweeps_4'
-    I = fftconvolve( dictOfDF_revFilt.get(key)['V_ACbias'], dictOfDF_revFilt.get(key)['V_input_rev'].iloc[::-1].reset_index(drop=True), mode = 'full')
-    I = I[dictOfDF_revFilt.get(key)['V_input_rev'].shape[0]:dictOfDF_revFilt.get(key)['V_input_rev'].shape[0]*2+1]
+    I = fftconvolve( dictOfDF_single.get(key)['V_ACbias'], dictOfDF_single.get(key)['V_input_rev'].iloc[::-1].reset_index(drop=True), mode = 'full')
+    I = I[dictOfDF_single.get(key)['V_input_rev'].shape[0]:dictOfDF_single.get(key)['V_input_rev'].shape[0]*2+1]
     Ifft = fft(I)
     # x = np.logspace(0,np.log10(25000), Ifft.size//2)
     x = scipy.fftpack.fftfreq(Ifft.size, 1 / 50e3)
@@ -296,14 +297,14 @@ for count, key in enumerate(dictOfDF_single):
                                               title='Mic Output for {}'.format(key), ax = Mic_pltax)
     Mic_outAx.set_ylabel('Mic Output (V)')
     Mic_outAx.set_xlabel('Time (s)')
-    
 
 
 
+#%% Datasheet data
 
-
-    
-    
+key = 's10_Vrms_70.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef'
+selectData = dictOfDF.get(key)
+bias_current = selectData['V_ACbias']/10**7
 
 
 
