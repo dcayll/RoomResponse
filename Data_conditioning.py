@@ -203,17 +203,6 @@ def makeRevFilters(dictOfDF_single, fs = 50000, low = 20, high = 20000, duration
     return dictOfDF_single
 
 
-# def averageData(dataType = 'sweep', )
-
-#%%
-# os.path.isfile(data_path/)
-
-##### Ambient noise data collection - to compute Test system accuracy #####
-# ambientpath = main_data_path / 'Ambient_Noise.txt'
-# data = pd.read_csv(ambientpath, sep = '\t', header = None)
-# data.columns = ['Time (s)', 'V_input (V)', 'V_ACbias (V)', 'V_elec+ (V)', 'V_elec-(V)', 'D_laser (mm)', 'Trigger', 'Mic_out (V)']
-
-
 
 #%%
 if __name__ == '__main__':
@@ -312,26 +301,7 @@ for count, key in enumerate(dictOfDF_single):
 
 
 
-#%% Averaging - for later
 
-    # ##### Steps through all DataFrames in dictOfDF and averages data from frequency sweeps 
-    # dictOfDF_averaged = {}
-    
-    # # for loop to step through all the different runs
-    # for run in dictOfDF:
-    #     print(run)
-        
-    #     # for loop for averaging the 4 different sweeps - prohibitively slow - need to revisit ***
-    #     temp = pd.DataFrame()
-    #     for i in range(0, 1000):
-    #         temp = temp.append((dictOfDF.get(run).iloc[dictOfDF.get(run).Trigger.diff().idxmax(axis=0)+i::500000,:].mean()).transpose(), ignore_index=True)
-    #         dictOfDF_averaged = {run: temp}
-    #         print(i)
-    #     break
-    # # df = temp.append(pd.DataFrame(dictOfDF.get(run).iloc[dictOfDF.get(run).Trigger.diff().idxmax(axis=0)+i::500000,:].mean()).transpose())
-
-
-    
     
     
 
