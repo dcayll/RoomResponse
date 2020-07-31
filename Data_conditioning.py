@@ -305,7 +305,8 @@ for count, key in enumerate(dictOfDF_single):
 key = 's10_Vrms_70.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef'
 selectData = dictOfDF.get(key)
 bias_current = selectData['V_ACbias']/10**7
-
+peak_current = bias_current.max()
+rms_current = 
 
 
 
