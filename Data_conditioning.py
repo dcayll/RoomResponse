@@ -300,13 +300,25 @@ for count, key in enumerate(dictOfDF_single):
 
 
 
-#%% Datasheet data
+#%% power analysis of Datasheet data
 
-key = 's10_Vrms_70.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef'
+#select data for power analysis
+# key = 's10_Vrms_70.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef'
+key = 's9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef'
 selectData = dictOfDF.get(key)
+voltage = selectData.attrs['Vrms']
+b4shape = selectData.shape
+# finds index where the timing signal ends/begins for the front/rear timing signal
+timingSig_index_front = int(selectData[selectData['V_elec-'].gt(0.3)].index[0]+selectData.attrs['fs']*.5)
+timingSig_index_back = selectData['V_elec-'].shape[0] - int(selectData[selectData['V_elec-'].iloc[::-1].reset_index(drop=True)
+                                                                                                    .gt(0.3)].index[0]+selectData.attrs['fs']*.5)
+# dataframe without timing ref in the beginning and end. 
+selectData = selectData.iloc[timingSig_index_front: timingSig_index_back]
+aftershape = selectData.shape
 bias_current = selectData['V_ACbias']/10**7
-peak_current = bias_current.max()
-rms_current = 
-
+peak_rms_current = bias_current.max()*.707
+avg_rms_current = np.sqrt(1/bias_current.shape[0]*bias_current.pow(2).sum())
+power_peak = peak_rms_current * voltage
+power_avg = avg_rms_current * voltage
 
 
