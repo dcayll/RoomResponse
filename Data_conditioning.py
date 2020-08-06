@@ -305,7 +305,7 @@ def insertTiming(dictOfDF_norm):
     
     for count, key in enumerate(dictOfDF_norm):
 
-        # finds index where the timing signal ends/begins for the front/rear timing signal
+        # finds index where the timing signal ends/begins for the front/rear timing signal respectively
         timingSig_index_front = int(dictOfDF_norm.get(key)[dictOfDF_norm.get(key)['V_elec-'].gt(0.3)].index[0]+dictOfDF_norm.get(key).attrs['fs']*.5)
         timingSig_index_back = dictOfDF_norm.get(key)['V_elec-'].shape[0] - int(dictOfDF_norm.get(key)[dictOfDF_norm.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
                                                                                                     .gt(0.3)].index[0]+dictOfDF_norm.get(key).attrs['fs']*.5)
@@ -321,11 +321,16 @@ def insertTiming(dictOfDF_norm):
         dictOfDF_norm.get(key)['V_ACbias'][timingSig_index_back:] = timingSig_back/timingSig_back.abs().max()*.5
         dictOfDF_norm.get(key)['D_laser'][timingSig_index_back:] = timingSig_back/timingSig_back.abs().max()*.5
         
+        
+        
         print('insertTiming {} of {}'.format(count+1, len(dictOfDF_norm)))
         
     return dictOfDF_norm
 
-
+def singleInstanceFromTimingRef(dictOfDF):
+    
+    
+    return dictOfDF_timingRef
 
 
 #%%
@@ -343,8 +348,8 @@ if __name__ == '__main__':
     
     # ##### normalize all data #####
     # dictOfDF_norm = normalize(dictOfDF_single)
-    # ##### Add timing to data without clear timing signals #####
-    # dictOfDF_timed = insertTiming(dictOfDF_norm)
+    ##### Add timing to data without clear timing signals #####
+    dictOfDF_timed = insertTiming(dictOfDF_norm)
     #%%
     saveWAV(dictOfDF_timed, main_data_path, subfolderName, dataOrganizationDict)
 
