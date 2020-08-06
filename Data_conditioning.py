@@ -54,7 +54,7 @@ def getFileOrg(main_data_path):
 
     """
     ##### Set path for overall folder with subfolders full of data #####
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200701-electrical, optical, and acoustical measurements')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200701-electrical, optical, and acoustical measurements')
     
     ##### Determine subfolders in main collection folder #####
     data_directories = [name for name in os.listdir(main_data_path) if os.path.isdir(main_data_path/name)]
@@ -234,8 +234,8 @@ if __name__ == '__main__':
     ##### Downsizes full dataset to a single sweep for each run and starts it at beginning of sweep #####
     dictOfDF_single = getSingleInstance(dictOfDF)
     
-    ##### Creates reverse filter and adds it to dictionary of DataFrames #####
-    dictOfDF_revFilt = makeRevFilters(dictOfDF_single)
+    # ##### Creates reverse filter and adds it to dictionary of DataFrames #####
+    # dictOfDF_revFilt = makeRevFilters(dictOfDF_single)
     
 #%% 
     ##### Creates a folder for each of the datasets (entries in dictOfDF) with a .wav file for each channel #####
