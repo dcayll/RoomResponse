@@ -346,7 +346,7 @@ def insertTiming(dictOfDF_norm):
 if __name__ == '__main__':
     
     ##### Change to path that contains a folder with subfolders full of .txt datafiles #####
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200720 - REW Aided sweeps')
+    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200805 - open face test, 1V input')
     
     ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
     dataOrganizationDict = getFileOrg(main_data_path)
@@ -405,21 +405,33 @@ for count, key in enumerate(dictOfDF):
     
     Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
     V_D_pltax = Vbias_D_laserplt.add_subplot(111)
-    V_ACbiasAx = dictOfDF_revFilt.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True, 
+    V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True, 
                                               title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
     V_ACbiasAx.set_ylabel('Bias Voltage (V)')
     V_ACbiasAx.set_xlabel('Time (s)')
-    D_laserAx = dictOfDF_revFilt.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
+    D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
     D_laserAx.set_ylabel('Center Displacement (um)')
     
     
     Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
     Mic_pltax = Mic_outplt.add_subplot(111)
-    Mic_outAx = dictOfDF_revFilt.get(key).plot(x = 'Time', y = 'Mic_out', grid=True, 
+    Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True, 
                                               title='Mic Output for {}'.format(key), ax = Mic_pltax)
     Mic_outAx.set_ylabel('Mic Output (V)')
     Mic_outAx.set_xlabel('Time (s)')
     
+
+#%% comparing 3 locations along diaphragm
+
+#Closed faced - center of diaphragm
+closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
+#Open faced - center of diaphragm
+center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter')
+#Open faced - 3mm closer to table
+ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable')
+#Open faced - 3mm farther from table
+FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
+
 
 
 
