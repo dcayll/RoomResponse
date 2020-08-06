@@ -91,7 +91,6 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         title_metadata = dataSet[:-4].split('_') # turn title into list of strings with dataset information
         
         # populate metadata from title into attrs attribute dictionary
-        #   **note if there is an issue with this method, it may be due to removal of .attrs method from pandas since it is experimental
         dictOfDF.get(dataSet[:-4]).attrs['Sample Number'] = title_metadata[0]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[1]] = float(title_metadata[2])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[3]] = float(title_metadata[4])
@@ -99,12 +98,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[5]+ ' stop'] = float(title_metadata[7])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[8]+ ' type'] = title_metadata[9]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[10]] = int(title_metadata[11])
-        dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' up'] = float(title_metadata[13])
-        dictOfDF.get(dataSet[:-4]).attrs[title_metadata[12]+ ' down'] = float(title_metadata[14])
-        dictOfDF.get(dataSet[:-4]).attrs[title_metadata[15]] = int(title_metadata[16])-1
-        if len(title_metadata) == 18:
-            # dictOfDF.get(dataSet[:-4]).attrs['Run Number'] = int(title_metadata[17])
-            dictOfDF.get(dataSet[:-4]).attrs['Notes'] = title_metadata[17]
+        if len(title_metadata) == 13:
+            dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
 
         print('makeDictofDF {} of {}' .format(count+1, len(dataOrganizationDict.get(subfolderName))))
     return dictOfDF
@@ -330,15 +325,6 @@ def insertTiming(dictOfDF_norm):
         
     return dictOfDF_norm
 
-# def averageData(dataType = 'sweep', )
-
-#%%
-# os.path.isfile(data_path/)
-
-##### Ambient noise data collection - to compute Test system accuracy #####
-# ambientpath = main_data_path / 'Ambient_Noise.txt'
-# data = pd.read_csv(ambientpath, sep = '\t', header = None)
-# data.columns = ['Time (s)', 'V_input (V)', 'V_ACbias (V)', 'V_elec+ (V)', 'V_elec-(V)', 'D_laser (mm)', 'Trigger', 'Mic_out (V)']
 
 
 
@@ -355,10 +341,10 @@ if __name__ == '__main__':
     dictOfDF = makeDictofDF(dataOrganizationDict, subfolderName)
     dictOfDF_single = dictOfDF
     
-    ##### normalize all data #####
-    dictOfDF_norm = normalize(dictOfDF_single)
-    ##### Add timing to data without clear timing signals #####
-    dictOfDF_timed = insertTiming(dictOfDF_norm)
+    # ##### normalize all data #####
+    # dictOfDF_norm = normalize(dictOfDF_single)
+    # ##### Add timing to data without clear timing signals #####
+    # dictOfDF_timed = insertTiming(dictOfDF_norm)
     #%%
     saveWAV(dictOfDF_timed, main_data_path, subfolderName, dataOrganizationDict)
 
@@ -413,12 +399,12 @@ for count, key in enumerate(dictOfDF):
     D_laserAx.set_ylabel('Center Displacement (um)')
     
     
-    Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
-    Mic_pltax = Mic_outplt.add_subplot(111)
-    Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True, 
-                                              title='Mic Output for {}'.format(key), ax = Mic_pltax)
-    Mic_outAx.set_ylabel('Mic Output (V)')
-    Mic_outAx.set_xlabel('Time (s)')
+    # Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
+    # Mic_pltax = Mic_outplt.add_subplot(111)
+    # Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True, 
+    #                                           title='Mic Output for {}'.format(key), ax = Mic_pltax)
+    # Mic_outAx.set_ylabel('Mic Output (V)')
+    # Mic_outAx.set_xlabel('Time (s)')
     
 
 #%% comparing 3 locations along diaphragm
@@ -432,8 +418,18 @@ ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_l
 #Open faced - 3mm farther from table
 FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
 
+openFace_D_laser = [closed_center, center, ClosertoHole, FarthertoHole]
 
+D_laserplt = plt.figure(figsize=(12,6), dpi=100)
+V_D_pltax = D_laserplt.add_subplot(111)
+# V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True, 
+#                                           title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
+# V_ACbiasAx.set_ylabel('Bias Voltage (V)')
 
+for df in openFace_D_laser:
+    D_laserAx = df.plot(x = 'Time', y = 'D_laser', grid=True, title='',ax = V_D_pltax)
+    D_laserAx.set_ylabel('Displacement (um)')
+    D_laserAx.set_xlabel('Time (s)')
 
 
 #%% Averaging - for later
