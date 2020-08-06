@@ -310,18 +310,6 @@ for count, key in enumerate(dictOfDF_revFilt):
     # Mic_outAx.set_xlabel('Time (s)')
 
 
-#%% comparing 3 locations along diaphragm
-
-#Closed faced - center of diaphragm
-closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
-#Open faced - center of diaphragm
-center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter')
-#Open faced - 3mm closer to table
-ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable')
-#Open faced - 3mm farther from table
-FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
-
-
 
 
 
