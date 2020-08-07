@@ -98,8 +98,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[5]+ ' stop'] = float(title_metadata[7])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[8]+ ' type'] = title_metadata[9]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[10]] = int(title_metadata[11])
-        if len(title_metadata) == 13:
-            dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
+        if len(title_metadata) == 14:
+            dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[13]
 
         print('makeDictofDF {} of {}' .format(count+1, len(dataOrganizationDict.get(subfolderName))))
     return dictOfDF
@@ -328,9 +328,46 @@ def insertTiming(dictOfDF_norm):
     return dictOfDF_norm
 
 def singleInstanceFromTimingRef(dictOfDF):
+    """
+    
+
+    Parameters
+    ----------
+    dictOfDF : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    dictOfDF_NoTiming : Dictionary of DataFrames
+        Removes timing reference chirp at beginning of sweep. 
+
+    """
     
     
-    return dictOfDF_timingRef
+    dictOfDF_NoTiming = {}
+    
+    for count, key in enumerate(dictOfDF):
+
+        # finds index where the timing signal ends/begins for the front/rear timing signal respectively
+        timingSig_index_front = int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].gt(0.3)].index[0]+dictOfDF.get(key).attrs['fs']*.5)
+        timingSig_index_back = dictOfDF.get(key)['V_elec-'].shape[0] - int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
+                                                                                                    .gt(0.3)].index[0]+dictOfDF.get(key).attrs['fs']*.5)
+        
+        #create a dict of df with timing signals removed from beginning and end of the signal. 
+        dictOfDF_NoTiming[key] = dictOfDF.get(key)[timingSig_index_front:timingSig_index_back].reset_index(drop=True)
+        
+        #find exact location of beginning of sweep
+        SweepStart = int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].gt(1)].index[0])
+        SweepEnd = dictOfDF_NoTiming.get(key)['V_elec-'].shape[0] - int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
+                                                                                                    .gt(0.2)].index[0])
+        dictOfDF_NoTiming[key] = dictOfDF.get(key)[SweepStart:SweepEnd].reset_index(drop=True)
+        dictOfDF_NoTiming.get(key)['Time'] = dictOfDF_NoTiming.get(key)['Time'] - dictOfDF_NoTiming.get(key)['Time'][0]
+
+        
+
+        
+        print('SingleInstanceFromRef {} of {}'.format(count+1, len(dictOfDF)))
+    return dictOfDF_NoTiming
 
 
 #%%
@@ -346,10 +383,11 @@ if __name__ == '__main__':
     dictOfDF = makeDictofDF(dataOrganizationDict, subfolderName)
     dictOfDF_single = dictOfDF
     
+    
     # ##### normalize all data #####
     # dictOfDF_norm = normalize(dictOfDF_single)
     ##### Add timing to data without clear timing signals #####
-    dictOfDF_timed = insertTiming(dictOfDF_norm)
+    # dictOfDF_timed = insertTiming(dictOfDF_single)
     #%%
     saveWAV(dictOfDF_timed, main_data_path, subfolderName, dataOrganizationDict)
 
@@ -414,8 +452,8 @@ for count, key in enumerate(dictOfDF):
 
 #%% comparing 3 locations along diaphragm
 
-#Closed faced - center of diaphragm
-closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
+# #Closed faced - center of diaphragm
+# closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
 #Open faced - center of diaphragm
 center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter')
 #Open faced - 3mm closer to table
@@ -423,7 +461,14 @@ ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_l
 #Open faced - 3mm farther from table
 FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
 
-openFace_D_laser = [closed_center, center, ClosertoHole, FarthertoHole]
+# create dictionary from data from above:
+openFace = {}
+# openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed'] = closed_center
+openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter'] = center
+openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable'] = ClosertoHole
+openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable'] = FarthertoHole
+
+dictOfDF_timeSync = singleInstanceFromTimingRef(openFace)
 
 D_laserplt = plt.figure(figsize=(12,6), dpi=100)
 V_D_pltax = D_laserplt.add_subplot(111)
@@ -431,8 +476,9 @@ V_D_pltax = D_laserplt.add_subplot(111)
 #                                           title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
 # V_ACbiasAx.set_ylabel('Bias Voltage (V)')
 
-for df in openFace_D_laser:
-    D_laserAx = df.plot(x = 'Time', y = 'D_laser', grid=True, title='',ax = V_D_pltax)
+for count, key in enumerate(dictOfDF_timeSync):
+    D_laserAx = dictOfDF_timeSync.get(key).plot(x = 'Time', y = 'D_laser', grid=True, title='',ax = V_D_pltax, 
+                                                label = dictOfDF_timeSync.get(key).attrs['notes'])
     D_laserAx.set_ylabel('Displacement (um)')
     D_laserAx.set_xlabel('Time (s)')
 
