@@ -87,7 +87,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         # print(dataSet)
         dictOfDF[dataSet[:-4]] = pd.read_csv(main_data_path/subfolderName/dataSet, sep = '\t', header = None)
         # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_input', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Trigger', 'Mic_out']
-        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
+        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
+        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_elec+', 'V_elec-', 'V_ACbias', 'Mic_out']
         title_metadata = dataSet[:-4].split('_') # turn title into list of strings with dataset information
         
         # populate metadata from title into attrs attribute dictionary
@@ -219,8 +220,8 @@ def normalize(dictOfDF_single):
         V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']/dictOfDF_single.get(dataSet[:-4])['V_elec+'].abs().max()
         #V_elec-
         V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']/dictOfDF_single.get(dataSet[:-4])['V_elec-'].abs().max()
-        #D_laser
-        D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']/dictOfDF_single.get(dataSet[:-4])['D_laser'].abs().max()
+        # #D_laser
+        # D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']/dictOfDF_single.get(dataSet[:-4])['D_laser'].abs().max()
         #Mic_out
         V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']/dictOfDF_single.get(dataSet[:-4])['Mic_out'].abs().max()
         
@@ -228,7 +229,7 @@ def normalize(dictOfDF_single):
         dictOfDF_single.get(dataSet[:-4])['V_ACbias'] = V_ACbias_norm*.5
         dictOfDF_single.get(dataSet[:-4])['V_elec+'] = V_elec_p_norm*.5
         dictOfDF_single.get(dataSet[:-4])['V_elec-'] = V_elec_n_norm*.5
-        dictOfDF_single.get(dataSet[:-4])['D_laser'] = D_laser_norm*.5
+        # dictOfDF_single.get(dataSet[:-4])['D_laser'] = D_laser_norm*.5
 
     return dictOfDF_single
 
@@ -276,9 +277,9 @@ def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict
         #V_elec-
         V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']
         write(TargetDir+'V_elec_n_norm.wav', fs, V_elec_n_norm)
-        #D_laser
-        D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
-        write(TargetDir+'D_laser_norm.wav', fs, D_laser_norm)
+        # #D_laser
+        # D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
+        # write(TargetDir+'D_laser_norm.wav', fs, D_laser_norm)
         #Mic_out
         V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
         write(TargetDir+'Mic_out_norm.wav', fs, V_Mic_out_norm)
@@ -316,10 +317,10 @@ def insertTiming(dictOfDF_norm):
         
         
         dictOfDF_norm.get(key)['V_ACbias'][:timingSig_index_front] = timingSig_front/timingSig_front.abs().max()*.5
-        dictOfDF_norm.get(key)['D_laser'][:timingSig_index_front] = timingSig_front/timingSig_front.abs().max()*.5
+        # dictOfDF_norm.get(key)['D_laser'][:timingSig_index_front] = timingSig_front/timingSig_front.abs().max()*.5
         
         dictOfDF_norm.get(key)['V_ACbias'][timingSig_index_back:] = timingSig_back/timingSig_back.abs().max()*.5
-        dictOfDF_norm.get(key)['D_laser'][timingSig_index_back:] = timingSig_back/timingSig_back.abs().max()*.5
+        # dictOfDF_norm.get(key)['D_laser'][timingSig_index_back:] = timingSig_back/timingSig_back.abs().max()*.5
         
         
         
@@ -374,7 +375,7 @@ def singleInstanceFromTimingRef(dictOfDF):
 if __name__ == '__main__':
     
     ##### Change to path that contains a folder with subfolders full of .txt datafiles #####
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200805 - open face test, 1V input')
+    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200729 - Electrical Insulation Measurements')
     
     ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
     dataOrganizationDict = getFileOrg(main_data_path)
@@ -389,7 +390,9 @@ if __name__ == '__main__':
     ##### Add timing to data without clear timing signals #####
     # dictOfDF_timed = insertTiming(dictOfDF_single)
     #%%
-    saveWAV(dictOfDF_timed, main_data_path, subfolderName, dataOrganizationDict)
+    # dictOfDF_norm = normalize(dictOfDF_single)
+    
+    saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict)
 
 
 #%%
@@ -438,8 +441,8 @@ for count, key in enumerate(dictOfDF):
                                               title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
     V_ACbiasAx.set_ylabel('Bias Voltage (V)')
     V_ACbiasAx.set_xlabel('Time (s)')
-    D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
-    D_laserAx.set_ylabel('Center Displacement (um)')
+    # D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
+    # D_laserAx.set_ylabel('Center Displacement (um)')
     
     
     # Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
