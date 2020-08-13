@@ -19,7 +19,6 @@ in the following format:
 
 """
 
-import xarray as xr
 import pandas as pd
 import sys
 from pathlib import Path
@@ -100,7 +99,7 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[5]+ ' stop'] = float(title_metadata[7])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[8]+ ' type'] = title_metadata[9]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[10]] = int(title_metadata[11])
-        dictOfDF.get(dataSet[:-4]).attrs['Location ('+title_metadata[14]+')'] = int(title_metadata[13])
+        dictOfDF.get(dataSet[:-4]).attrs['Location (mm)'] = int(title_metadata[13])
         if len(title_metadata) == 15:
             dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
         
@@ -385,6 +384,7 @@ if __name__ == '__main__':
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200701-electrical, optical, and acoustical measurements')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200729 - Electrical Insulation Measurements')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200805 - open face test, 1V input')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - New Diaphragm Characterization')
     main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - Open Face test parallel, perpendicular')
 
 
@@ -416,6 +416,15 @@ if __name__ == '__main__':
     # dictOfDF_revFilt = makeRevFilters(dictOfDF_single)
 
 
+# #%% for experimenting with modulating/demodulating standing wave
+
+
+
+# sin_logsweep = 1*np.sin(2.0*np.pi*0.245*time + 2.0*np.pi*(2.45-0.245)/21.193979166666665*time**2/2)
+# sin = 1*np.sin(2.0*np.pi*0.245*time)
+# modulated = dictOfDF_noTime.get(key)['V_elec-']*sin
+# plt.plot(time, modulated*.002+.037)
+# dictOfDF_noTime.get(key).plot(x = 'Time', y = 'D_laser')
 
     #%% for plotting frequency spectra
 
@@ -461,23 +470,25 @@ for count, key in enumerate(dictOfDF):
 
 #%% comparing 3 locations along diaphragm
 
-# #Closed faced - center of diaphragm
-# closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
-#Open faced - center of diaphragm
-center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter')
-#Open faced - 3mm closer to table
-ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable')
-#Open faced - 3mm farther from table
-FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
+# # #Closed faced - center of diaphragm
+# # closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
+# #Open faced - center of diaphragm
+# center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter')
+# #Open faced - 3mm closer to table
+# ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable')
+# #Open faced - 3mm farther from table
+# FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
 
-# create dictionary from data from above:
-openFace = {}
-# openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed'] = closed_center
-openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter'] = center
-openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable'] = ClosertoHole
-openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable'] = FarthertoHole
+# # create dictionary from data from above:
+# openFace = {}
+# # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed'] = closed_center
+# openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter'] = center
+# openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable'] = ClosertoHole
+# openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable'] = FarthertoHole
 
-dictOfDF_timeSync = singleInstanceFromTimingRef(openFace)
+# dictOfDF_timeSync = singleInstanceFromTimingRef(openFace)
+
+dictOfDF_timeSync = singleInstanceFromTimingRef(dictOfDF)
 
 D_laserplt = plt.figure(figsize=(12,6), dpi=100)
 V_D_pltax = D_laserplt.add_subplot(111)
@@ -486,8 +497,9 @@ V_D_pltax = D_laserplt.add_subplot(111)
 # V_ACbiasAx.set_ylabel('Bias Voltage (V)')
 
 for count, key in enumerate(dictOfDF_timeSync):
+    dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].sub(dictOfDF_timeSync.get(key)['D_laser'].mean())
     D_laserAx = dictOfDF_timeSync.get(key).plot(x = 'Time', y = 'D_laser', grid=True, title='',ax = V_D_pltax,
-                                                label = dictOfDF_timeSync.get(key).attrs['notes'])
+                                                label = dictOfDF_timeSync.get(key).attrs['Location (mm)'])
     D_laserAx.set_ylabel('Displacement (um)')
     D_laserAx.set_xlabel('Time (s)')
 
