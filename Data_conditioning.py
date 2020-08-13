@@ -88,8 +88,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         # print(dataSet)
         dictOfDF[dataSet[:-4]] = pd.read_csv(main_data_path/subfolderName/dataSet, sep = '\t', header = None)
         # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_input', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Trigger', 'Mic_out']
-        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
-        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_elec+', 'V_elec-', 'V_ACbias', 'Mic_out']
+        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
+        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_elec+', 'V_elec-', 'V_ACbias', 'Mic_out']
         title_metadata = dataSet[:-4].split('_') # turn title into list of strings with dataset information
 
         # populate metadata from title into attrs attribute dictionary
@@ -100,8 +100,13 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[5]+ ' stop'] = float(title_metadata[7])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[8]+ ' type'] = title_metadata[9]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[10]] = int(title_metadata[11])
-        if len(title_metadata) == 14:
-            dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[13]
+        dictOfDF.get(dataSet[:-4]).attrs['Location ('+title_metadata[14]+')'] = int(title_metadata[13])
+        if len(title_metadata) == 15:
+            dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
+        
+        # if len(title_metadata) == 14:
+        #     dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[13]
+            
 
         print('makeDictofDF {} of {}' .format(count+1, len(dataOrganizationDict.get(subfolderName))))
     return dictOfDF
@@ -221,8 +226,8 @@ def normalize(dictOfDF_single):
         V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']/dictOfDF_single.get(dataSet[:-4])['V_elec+'].abs().max()
         #V_elec-
         V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']/dictOfDF_single.get(dataSet[:-4])['V_elec-'].abs().max()
-        # #D_laser
-        # D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']/dictOfDF_single.get(dataSet[:-4])['D_laser'].abs().max()
+        #D_laser
+        D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']/dictOfDF_single.get(dataSet[:-4])['D_laser'].abs().max()
         #Mic_out
         V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']/dictOfDF_single.get(dataSet[:-4])['Mic_out'].abs().max()
 
@@ -230,7 +235,7 @@ def normalize(dictOfDF_single):
         dictOfDF_single.get(dataSet[:-4])['V_ACbias'] = V_ACbias_norm*.5
         dictOfDF_single.get(dataSet[:-4])['V_elec+'] = V_elec_p_norm*.5
         dictOfDF_single.get(dataSet[:-4])['V_elec-'] = V_elec_n_norm*.5
-        # dictOfDF_single.get(dataSet[:-4])['D_laser'] = D_laser_norm*.5
+        dictOfDF_single.get(dataSet[:-4])['D_laser'] = D_laser_norm*.5
 
     return dictOfDF_single
 
@@ -279,8 +284,8 @@ def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict
         V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']
         write(TargetDir+'V_elec_n_norm.wav', fs, V_elec_n_norm)
         # #D_laser
-        # D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
-        # write(TargetDir+'D_laser_norm.wav', fs, D_laser_norm)
+        D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
+        write(TargetDir+'D_laser_norm.wav', fs, D_laser_norm)
         #Mic_out
         V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
         write(TargetDir+'Mic_out_norm.wav', fs, V_Mic_out_norm)
@@ -358,11 +363,11 @@ def singleInstanceFromTimingRef(dictOfDF):
         #create a dict of df with timing signals removed from beginning and end of the signal.
         dictOfDF_NoTiming[key] = dictOfDF.get(key)[timingSig_index_front:timingSig_index_back].reset_index(drop=True)
 
-        #find exact location of beginning of sweep
-        SweepStart = int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].gt(1)].index[0])
-        SweepEnd = dictOfDF_NoTiming.get(key)['V_elec-'].shape[0] - int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
-                                                                                                    .gt(0.2)].index[0])
-        dictOfDF_NoTiming[key] = dictOfDF.get(key)[SweepStart:SweepEnd].reset_index(drop=True)
+        #find exact location of beginning of sweep ( .gt commands are the cutoff voltages)
+        SweepStart = int(dictOfDF_NoTiming.get(key)[dictOfDF_NoTiming.get(key)['V_elec-'].gt(0.5)].index[0])
+        SweepEnd = dictOfDF_NoTiming.get(key)['V_elec-'].shape[0] - int(dictOfDF_NoTiming.get(key)[dictOfDF_NoTiming.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
+                                                                                                    .gt(0.5)].index[0])
+        dictOfDF_NoTiming[key] = dictOfDF_NoTiming.get(key)[SweepStart:SweepEnd].reset_index(drop=True)
         dictOfDF_NoTiming.get(key)['Time'] = dictOfDF_NoTiming.get(key)['Time'] - dictOfDF_NoTiming.get(key)['Time'][0]
 
 
@@ -379,7 +384,8 @@ if __name__ == '__main__':
 
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200701-electrical, optical, and acoustical measurements')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200729 - Electrical Insulation Measurements')
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200805 - open face test, 1V input')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200805 - open face test, 1V input')
+    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - Open Face test parallel, perpendicular')
 
 
     ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
@@ -401,11 +407,6 @@ if __name__ == '__main__':
 
 
 #%%
-
-
-
-
-
 
 
     # ##### Downsizes full dataset to a single sweep for each run and starts it at beginning of sweep #####
