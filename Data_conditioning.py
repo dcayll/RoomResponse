@@ -99,7 +99,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[5]+ ' stop'] = float(title_metadata[7])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[8]+ ' type'] = title_metadata[9]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[10]] = int(title_metadata[11])
-        dictOfDF.get(dataSet[:-4]).attrs['Location (mm)'] = int(title_metadata[13])
+        dictOfDF.get(dataSet[:-4]).attrs['Burn-in time (s)'] = int(title_metadata[13])
+        # dictOfDF.get(dataSet[:-4]).attrs['Location (mm)'] = int(title_metadata[13])
         if len(title_metadata) == 15:
             dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
         
@@ -355,19 +356,19 @@ def singleInstanceFromTimingRef(dictOfDF):
     for count, key in enumerate(dictOfDF):
 
         # finds index where the timing signal ends/begins for the front/rear timing signal respectively
-        timingSig_index_front = int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].gt(0.3)].index[0]+dictOfDF.get(key).attrs['fs']*.5)
+        timingSig_index_front = int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].gt(0.3)].index[0])#+dictOfDF.get(key).attrs['fs']*.5)
         timingSig_index_back = dictOfDF.get(key)['V_elec-'].shape[0] - int(dictOfDF.get(key)[dictOfDF.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
-                                                                                                    .gt(0.3)].index[0]+dictOfDF.get(key).attrs['fs']*.5)
+                                                                                                    .gt(0.3)].index[0])#+dictOfDF.get(key).attrs['fs']*.5)
 
         #create a dict of df with timing signals removed from beginning and end of the signal.
         dictOfDF_NoTiming[key] = dictOfDF.get(key)[timingSig_index_front:timingSig_index_back].reset_index(drop=True)
 
-        #find exact location of beginning of sweep ( .gt commands are the cutoff voltages)
-        SweepStart = int(dictOfDF_NoTiming.get(key)[dictOfDF_NoTiming.get(key)['V_elec-'].gt(0.5)].index[0])
-        SweepEnd = dictOfDF_NoTiming.get(key)['V_elec-'].shape[0] - int(dictOfDF_NoTiming.get(key)[dictOfDF_NoTiming.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
-                                                                                                    .gt(0.5)].index[0])
-        dictOfDF_NoTiming[key] = dictOfDF_NoTiming.get(key)[SweepStart:SweepEnd].reset_index(drop=True)
-        dictOfDF_NoTiming.get(key)['Time'] = dictOfDF_NoTiming.get(key)['Time'] - dictOfDF_NoTiming.get(key)['Time'][0]
+        # #find exact location of beginning of sweep ( .gt commands are the cutoff voltages)
+        # SweepStart = int(dictOfDF_NoTiming.get(key)[dictOfDF_NoTiming.get(key)['V_elec-'].gt(0.5)].index[0])
+        # SweepEnd = dictOfDF_NoTiming.get(key)['V_elec-'].shape[0] - int(dictOfDF_NoTiming.get(key)[dictOfDF_NoTiming.get(key)['V_elec-'].iloc[::-1].reset_index(drop=True)
+        #                                                                                             .gt(0.5)].index[0])
+        # dictOfDF_NoTiming[key] = dictOfDF_NoTiming.get(key)[SweepStart:SweepEnd].reset_index(drop=True)
+        # dictOfDF_NoTiming.get(key)['Time'] = dictOfDF_NoTiming.get(key)['Time'] - dictOfDF_NoTiming.get(key)['Time'][0]
 
 
 
@@ -384,8 +385,8 @@ if __name__ == '__main__':
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200701-electrical, optical, and acoustical measurements')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200729 - Electrical Insulation Measurements')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200805 - open face test, 1V input')
-    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - New Diaphragm Characterization')
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - Open Face test parallel, perpendicular')
+    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - New Diaphragm Characterization')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - Open Face test parallel, perpendicular')
 
 
     ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
@@ -454,18 +455,18 @@ for count, key in enumerate(dictOfDF):
     V_D_pltax = Vbias_D_laserplt.add_subplot(111)
     V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
                                               title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
-    V_ACbiasAx.set_ylabel('Bias Voltage (V)')
+    V_ACbiasAx.set_ylabel('AC Bias Voltage (V)')
     V_ACbiasAx.set_xlabel('Time (s)')
-    # D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
-    # D_laserAx.set_ylabel('Center Displacement (um)')
+    D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
+    D_laserAx.set_ylabel('Center Displacement (mm)')
 
 
-    # Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
-    # Mic_pltax = Mic_outplt.add_subplot(111)
-    # Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True,
-    #                                           title='Mic Output for {}'.format(key), ax = Mic_pltax)
-    # Mic_outAx.set_ylabel('Mic Output (V)')
-    # Mic_outAx.set_xlabel('Time (s)')
+    Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
+    Mic_pltax = Mic_outplt.add_subplot(111)
+    Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True,
+                                              title='Mic Output for {}'.format(key), ax = Mic_pltax)
+    Mic_outAx.set_ylabel('Mic Output (V)')
+    Mic_outAx.set_xlabel('Time (s)')
 
 
 #%% comparing 3 locations along diaphragm
@@ -497,7 +498,13 @@ V_D_pltax = D_laserplt.add_subplot(111)
 # V_ACbiasAx.set_ylabel('Bias Voltage (V)')
 
 for count, key in enumerate(dictOfDF_timeSync):
+    #remove offset in D_laser data and begin time at 0
     dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].sub(dictOfDF_timeSync.get(key)['D_laser'].mean())
+    dictOfDF_timeSync.get(key)['Time'] = dictOfDF_timeSync.get(key)['Time'].sub(dictOfDF_timeSync.get(key)['Time'][0])
+    
+    dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].rolling(20).mean()
+    dictOfDF_timeSync.get(key)['Time'] = dictOfDF_timeSync.get(key)['Time'].rolling(20).mean()
+    
     D_laserAx = dictOfDF_timeSync.get(key).plot(x = 'Time', y = 'D_laser', grid=True, title='',ax = V_D_pltax,
                                                 label = dictOfDF_timeSync.get(key).attrs['Location (mm)'])
     D_laserAx.set_ylabel('Displacement (um)')
