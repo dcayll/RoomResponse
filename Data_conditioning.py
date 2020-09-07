@@ -87,7 +87,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         # print(dataSet)
         dictOfDF[dataSet[:-4]] = pd.read_csv(main_data_path/subfolderName/dataSet, sep = '\t', header = None)
         # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_input', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Trigger', 'Mic_out']
-        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
+        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
+        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_diff', 'Mic_out']
         # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_elec+', 'V_elec-', 'V_ACbias', 'Mic_out']
         title_metadata = dataSet[:-4].split('_') # turn title into list of strings with dataset information
 
@@ -99,14 +100,23 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[5]+ ' stop'] = float(title_metadata[7])
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[8]+ ' type'] = title_metadata[9]
         dictOfDF.get(dataSet[:-4]).attrs[title_metadata[10]] = int(title_metadata[11])
-        dictOfDF.get(dataSet[:-4]).attrs['Burn-in time (s)'] = int(title_metadata[13])
+        # dictOfDF.get(dataSet[:-4]).attrs['Burn-in time (s)'] = int(title_metadata[13])
         # dictOfDF.get(dataSet[:-4]).attrs['Location (mm)'] = int(title_metadata[13])
-        if len(title_metadata) == 15:
-            dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
+        # if len(title_metadata) == 15:
+        #     dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[12]
         
         # if len(title_metadata) == 14:
         #     dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[13]
-            
+        
+        
+        ## keyence laser calibration
+        # dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*1000
+        
+        
+        ## U-E laser calibration
+        # dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*.2
+    
+    
 
         print('makeDictofDF {} of {}' .format(count+1, len(dataOrganizationDict.get(subfolderName))))
     return dictOfDF
@@ -139,7 +149,12 @@ def getSingleInstance(dictOfDF):
         dictOfDF_single.get(key)['Time'] = dictOfDF_single.get(key)['Time']-dictOfDF_single.get(key)['Time'].iloc[0]
         dictOfDF_single.get(key)['V_elec+'] = dictOfDF_single.get(key)['V_elec+'] * 100
         dictOfDF_single.get(key)['V_elec-'] = dictOfDF_single.get(key)['V_elec-'] * 100
-        dictOfDF_single.get(key)['D_laser'] = dictOfDF_single.get(key)['D_laser'] * 1000
+        
+        ## U-E laser calibration
+        dictOfDF_single.get(key)['D_laser'] = (dictOfDF_single.get(key)['D_laser']-dictOfDF_single.get(key)['D_laser'][0:144001].mean())*.2
+    
+        ## keyence laser calibration
+        # dictOfDF_single.get(key)['D_laser'] = dictOfDF_single.get(key)['D_laser'] * 1000
 
 
 
@@ -272,23 +287,27 @@ def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict
         TargetDir = str(main_data_path/subfolderName/dataSet[:-4])+'\\'
         fs = dictOfDF_single.get(dataSet[:-4]).attrs['fs']
         # fs = 48000
+        
+        #V_diff
+        V_diff = dictOfDF_single.get(dataSet[:-4])['V_diff']
+        write(TargetDir+'V_diff.wav', fs, V_diff)
 
 
-        #V_ACbias
-        V_ACbias_norm = dictOfDF_single.get(dataSet[:-4])['V_ACbias']
-        write(TargetDir+'V_ACbias_norm.wav', fs, V_ACbias_norm)
-        #V_elec+
-        V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']
-        write(TargetDir+'V_elec_p_norm.wav', fs, V_elec_p_norm)
-        #V_elec-
-        V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']
-        write(TargetDir+'V_elec_n_norm.wav', fs, V_elec_n_norm)
-        # #D_laser
-        D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
-        write(TargetDir+'D_laser_norm.wav', fs, D_laser_norm)
-        #Mic_out
-        V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
-        write(TargetDir+'Mic_out_norm.wav', fs, V_Mic_out_norm)
+        # #V_ACbias
+        # V_ACbias_norm = dictOfDF_single.get(dataSet[:-4])['V_ACbias']
+        # write(TargetDir+'V_ACbias_norm.wav', fs, V_ACbias_norm)
+        # #V_elec+
+        # V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']
+        # write(TargetDir+'V_elec_p_norm.wav', fs, V_elec_p_norm)
+        # #V_elec-
+        # V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']
+        # write(TargetDir+'V_elec_n_norm.wav', fs, V_elec_n_norm)
+        # # #D_laser
+        # D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
+        # write(TargetDir+'D_laser_norm.wav', fs, D_laser_norm)
+        # #Mic_out
+        # V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
+        # write(TargetDir+'Mic_out_norm.wav', fs, V_Mic_out_norm)
 
 
 def insertTiming(dictOfDF_norm):
@@ -385,8 +404,13 @@ if __name__ == '__main__':
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200701-electrical, optical, and acoustical measurements')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200729 - Electrical Insulation Measurements')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200805 - open face test, 1V input')
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - New Diaphragm Characterization')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - New Diaphragm Characterization')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200811 - Open Face test parallel, perpendicular')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200820 - Laser tests')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200822 - Pink DLC diaphragm')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200826 - Open face test, real displacement')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200826 - stax diaphragm')
+    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200903 - differential amp measurement')
 
 
     ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
@@ -394,7 +418,10 @@ if __name__ == '__main__':
     print('Datasets are grouped in the following subfolders: \n' + ', \n'.join(dataOrganizationDict.keys()))
     subfolderName = input('Please select and type out a dataset to analyze from above: \n\n')
     dictOfDF = makeDictofDF(dataOrganizationDict, subfolderName)
+    
+    
     dictOfDF_single = dictOfDF
+    
 
 
     # ##### normalize all data #####
@@ -451,23 +478,41 @@ if __name__ == '__main__':
 
 for count, key in enumerate(dictOfDF):
 
-    Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
-    V_D_pltax = Vbias_D_laserplt.add_subplot(111)
-    V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
-                                              title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
-    V_ACbiasAx.set_ylabel('AC Bias Voltage (V)')
-    V_ACbiasAx.set_xlabel('Time (s)')
-    D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', grid=True, secondary_y=True, ax = V_D_pltax)
-    D_laserAx.set_ylabel('Center Displacement (mm)')
+    # Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
+    # V_D_pltax = Vbias_D_laserplt.add_subplot(111)
+    
+    
+    
+    # # V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
+    # #                                            secondary_y=True, ax = V_D_pltax)
+    # # V_ACbiasAx.set_ylabel('AC Bias Voltage (V)')
+    # D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', title='disp for {}'.format(key),grid=True, ax = V_D_pltax)
+    # D_laserAx.set_xlabel('Time (s)')
+    # D_laserAx.set_ylabel('Center Displacement (um)')
+    
+    V_inplt = plt.figure(figsize=(12,6), dpi=100)
+    V_in_pltax = V_inplt.add_subplot(111)
+    V_inAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_elec-', title='V_input for {}'.format(key),grid=True, ax = V_in_pltax)
+    V_inAx.set_xlabel('Time (s)')
+    V_inAx.set_ylabel('Electrode Voltage (V)')
+    
+    
+    # Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
+    # Mic_pltax = Mic_outplt.add_subplot(111)
+    # Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True,
+    #                                           title='Mic Output for {}'.format(key), ax = Mic_pltax)
+    # Mic_outAx.set_ylabel('Mic Output (V)')
+    # Mic_outAx.set_xlabel('Time (s)')
 
+#%% 
 
-    Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
-    Mic_pltax = Mic_outplt.add_subplot(111)
-    Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True,
-                                              title='Mic Output for {}'.format(key), ax = Mic_pltax)
-    Mic_outAx.set_ylabel('Mic Output (V)')
-    Mic_outAx.set_xlabel('Time (s)')
-
+newPlt = plt.figure(figsize=(12,6), dpi=100)
+movAvgAx = newPlt.add_subplot(111)
+D_laserAx = dictOfDF.get(key).plot(x = 'Time', y = 'D_laser', title='Creating "beats" using moving average',grid=True, ax = movAvgAx)
+D_laserAx.set_xlabel('Time (s)')
+D_laserAx.set_ylabel('Center Displacement (mm)')
+plt.plot(dictOfDF.get(key)['Time'], dictOfDF.get(key)['D_laser'].rolling(2048).mean())
+movAvgAx.legend(['Raw Data', '2048 pt. moving average'])
 
 #%% comparing 3 locations along diaphragm
 
