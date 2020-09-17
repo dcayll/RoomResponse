@@ -87,8 +87,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         # print(dataSet)
         dictOfDF[dataSet[:-4]] = pd.read_csv(main_data_path/subfolderName/dataSet, sep = '\t', header = None)
         # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_input', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Trigger', 'Mic_out']
-        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
-        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_diff', 'Mic_out']
+        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
+        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_diff', 'Mic_out']
         # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_elec+', 'V_elec-', 'V_ACbias', 'Mic_out']
         title_metadata = dataSet[:-4].split('_') # turn title into list of strings with dataset information
 
@@ -109,8 +109,8 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         #     dictOfDF.get(dataSet[:-4]).attrs['notes'] = title_metadata[13]
         
         
-        ## keyence laser calibration
-        # dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*1000
+        # keyence laser calibration
+        dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*1000
         
         
         ## U-E laser calibration
@@ -163,58 +163,58 @@ def getSingleInstance(dictOfDF):
 
     return dictOfDF_single
 
-def makeRevFilters(dictOfDF_single, fs = 50000, low = 20, high = 20000, duration = 5):
-    """
+# def makeRevFilters(dictOfDF_single, fs = 50000, low = 20, high = 20000, duration = 5):
+#     """
 
-    Parameters
-    ----------
-    fs : Int, optional
-        Sampling frequency. The default is 50000.
-    low : Int, optional
-        Starting frequency of sweep. The default is 20.
-    high : Int, optional
-        Ending frequency of sweep. The default is 20000.
-    duration : Int, optional
-        Sweep time in seconds. The default is 10.
-    dictOfDF_single: dictionary of DataFrames
-        Reduced dataset of a single sweep according to AWG trigger signal.
-        Minimally processed to produce accurate values of collected data
-        from amplifiers/ sensors
+#     Parameters
+#     ----------
+#     fs : Int, optional
+#         Sampling frequency. The default is 50000.
+#     low : Int, optional
+#         Starting frequency of sweep. The default is 20.
+#     high : Int, optional
+#         Ending frequency of sweep. The default is 20000.
+#     duration : Int, optional
+#         Sweep time in seconds. The default is 10.
+#     dictOfDF_single: dictionary of DataFrames
+#         Reduced dataset of a single sweep according to AWG trigger signal.
+#         Minimally processed to produce accurate values of collected data
+#         from amplifiers/ sensors
 
-    Returns
-    -------
-    dictOfDF_single: dictionary of DataFrames
-        Contains single sweep data and reverse filter of the input sweep signal
+#     Returns
+#     -------
+#     dictOfDF_single: dictionary of DataFrames
+#         Contains single sweep data and reverse filter of the input sweep signal
 
-    """
+#     """
 
 
 
-    for count, key in enumerate(dictOfDF_single):
+#     for count, key in enumerate(dictOfDF_single):
 
-        fs = dictOfDF_single.get(key).attrs['fs']
-        low = dictOfDF_single.get(key).attrs['freq start']
-        high = dictOfDF_single.get(key).attrs['freq stop']
-        duration = dictOfDF_single.get(key).attrs['duration up']
-        sweepType = dictOfDF_single.get(key).attrs['sweep type']
-        T = fs * duration
-        w1 = low / fs * 2*np.pi
-        w2 = high / fs * 2*np.pi
-        # This is what the value of K will be at the end (in dB):
-        kend = 10**((-6*np.log2(w2/w1))/20)
-        # dB to rational number.
-        k = np.log(kend)/T
+#         fs = dictOfDF_single.get(key).attrs['fs']
+#         low = dictOfDF_single.get(key).attrs['freq start']
+#         high = dictOfDF_single.get(key).attrs['freq stop']
+#         duration = dictOfDF_single.get(key).attrs['duration up']
+#         sweepType = dictOfDF_single.get(key).attrs['sweep type']
+#         T = fs * duration
+#         w1 = low / fs * 2*np.pi
+#         w2 = high / fs * 2*np.pi
+#         # This is what the value of K will be at the end (in dB):
+#         kend = 10**((-6*np.log2(w2/w1))/20)
+#         # dB to rational number.
+#         k = np.log(kend)/T
 
-        dictOfDF_single.get(key)['V_input_rev'] = dictOfDF_single.get(key)['V_input'].iloc[::-1].reset_index(drop=True) * \
-            np.array(list( map(lambda t: np.exp(float(t)*k), range(int(T)))))
+#         dictOfDF_single.get(key)['V_input_rev'] = dictOfDF_single.get(key)['V_input'].iloc[::-1].reset_index(drop=True) * \
+#             np.array(list( map(lambda t: np.exp(float(t)*k), range(int(T)))))
 
-        # Now we have to normilze energy of result of dot product.
-        # This is "naive" method but it just works.
-        Frp =  fft(fftconvolve(dictOfDF_single.get(key)['V_input_rev'], dictOfDF_single.get(key)['V_input']))
-        dictOfDF_single.get(key)['V_input_rev'] /= np.abs(Frp[round(Frp.shape[0]/4)])
-        print('makeFilters {} of {}'.format(count+1, len(dictOfDF_single)))
+#         # Now we have to normilze energy of result of dot product.
+#         # This is "naive" method but it just works.
+#         Frp =  fft(fftconvolve(dictOfDF_single.get(key)['V_input_rev'], dictOfDF_single.get(key)['V_input']))
+#         dictOfDF_single.get(key)['V_input_rev'] /= np.abs(Frp[round(Frp.shape[0]/4)])
+#         print('makeFilters {} of {}'.format(count+1, len(dictOfDF_single)))
 
-    return dictOfDF_single
+#     return dictOfDF_single
 
 
 
@@ -256,9 +256,7 @@ def normalize(dictOfDF_single):
 
 
 
-    ##### Creates a folder for each of the datasets (entries in dictOfDF) with a .wav file for each channel #####
-    # saveWAV(dictOfDF_single, main_data_path, subfolderName)
-def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict):
+def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict, label):
     """
 
 
@@ -288,26 +286,26 @@ def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict
         fs = dictOfDF_single.get(dataSet[:-4]).attrs['fs']
         # fs = 48000
         
-        #V_diff
-        V_diff = dictOfDF_single.get(dataSet[:-4])['V_diff']
-        write(TargetDir+'V_diff.wav', fs, V_diff)
+        # #V_diff
+        # V_diff = dictOfDF_single.get(dataSet[:-4])['V_diff']
+        # write(TargetDir+'V_diff.wav', fs, V_diff)
 
 
         # #V_ACbias
         # V_ACbias_norm = dictOfDF_single.get(dataSet[:-4])['V_ACbias']
         # write(TargetDir+'V_ACbias_norm.wav', fs, V_ACbias_norm)
-        # #V_elec+
-        # V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']
-        # write(TargetDir+'V_elec_p_norm.wav', fs, V_elec_p_norm)
+        #V_elec+
+        V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']
+        write(TargetDir+'V_elec_p__{}.wav'.format(label), fs, V_elec_p_norm)
         # #V_elec-
         # V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']
         # write(TargetDir+'V_elec_n_norm.wav', fs, V_elec_n_norm)
-        # # #D_laser
-        # D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
-        # write(TargetDir+'D_laser_norm.wav', fs, D_laser_norm)
-        # #Mic_out
-        # V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
-        # write(TargetDir+'Mic_out_norm.wav', fs, V_Mic_out_norm)
+        # #D_laser
+        D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
+        write(TargetDir+'D_laser_{}.wav'.format(label), fs, D_laser_norm)
+        #Mic_out
+        V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
+        write(TargetDir+'Mic_out_norm_{}.wav'.format(label), fs, V_Mic_out_norm)
 
 
 def insertTiming(dictOfDF_norm):
@@ -410,7 +408,8 @@ if __name__ == '__main__':
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200822 - Pink DLC diaphragm')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200826 - Open face test, real displacement')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200826 - stax diaphragm')
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200903 - differential amp measurement')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200903 - differential amp measurement')
+    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200901 - New Stacking fixture')
 
 
     ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
@@ -431,7 +430,7 @@ if __name__ == '__main__':
     #%%
     # dictOfDF_norm = normalize(dictOfDF_single)
 
-    saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict)
+    saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict, '022820-2')
 
 
 #%%
@@ -444,15 +443,6 @@ if __name__ == '__main__':
     # dictOfDF_revFilt = makeRevFilters(dictOfDF_single)
 
 
-# #%% for experimenting with modulating/demodulating standing wave
-
-
-
-# sin_logsweep = 1*np.sin(2.0*np.pi*0.245*time + 2.0*np.pi*(2.45-0.245)/21.193979166666665*time**2/2)
-# sin = 1*np.sin(2.0*np.pi*0.245*time)
-# modulated = dictOfDF_noTime.get(key)['V_elec-']*sin
-# plt.plot(time, modulated*.002+.037)
-# dictOfDF_noTime.get(key).plot(x = 'Time', y = 'D_laser')
 
     #%% for plotting frequency spectra
 
@@ -478,17 +468,17 @@ if __name__ == '__main__':
 
 for count, key in enumerate(dictOfDF):
 
-    # Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
-    # V_D_pltax = Vbias_D_laserplt.add_subplot(111)
+    Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
+    V_D_pltax = Vbias_D_laserplt.add_subplot(111)
     
     
     
-    # # V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
-    # #                                            secondary_y=True, ax = V_D_pltax)
-    # # V_ACbiasAx.set_ylabel('AC Bias Voltage (V)')
-    # D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', title='disp for {}'.format(key),grid=True, ax = V_D_pltax)
-    # D_laserAx.set_xlabel('Time (s)')
-    # D_laserAx.set_ylabel('Center Displacement (um)')
+    # V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
+    #                                            secondary_y=True, ax = V_D_pltax)
+    # V_ACbiasAx.set_ylabel('AC Bias Voltage (V)')
+    D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', title='disp for {}'.format(key),grid=True, ax = V_D_pltax)
+    D_laserAx.set_xlabel('Time (s)')
+    D_laserAx.set_ylabel('Center Displacement (um)')
     
     V_inplt = plt.figure(figsize=(12,6), dpi=100)
     V_in_pltax = V_inplt.add_subplot(111)
