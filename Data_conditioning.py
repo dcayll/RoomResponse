@@ -31,6 +31,7 @@ from scipy.fftpack import fft, ifft
 from scipy.signal import fftconvolve, convolve
 from scipy.io.wavfile import write
 import scipy
+import math
 
 # from measure import Spectrum
 # from room_response_estimator import *
@@ -87,8 +88,12 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         # print(dataSet)
         dictOfDF[dataSet[:-4]] = pd.read_csv(main_data_path/subfolderName/dataSet, sep = '\t', header = None)
         # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_input', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Trigger', 'Mic_out']
-        dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
-        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_diff', 'Mic_out']
+        # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_ACbias', 'V_elec+', 'V_elec-', 'D_laser', 'Mic_out']
+        if dictOfDF.get(dataSet[:-4]).columns.size == 2:
+            dictOfDF.get(dataSet[:-4]).columns = ['Time', 'D_laser']
+        elif dictOfDF.get(dataSet[:-4]).columns.size == 3:
+            dictOfDF.get(dataSet[:-4]).columns = ['Time', 'D_laser', 'V_input']
+
         # dictOfDF.get(dataSet[:-4]).columns = ['Time', 'V_elec+', 'V_elec-', 'V_ACbias', 'Mic_out']
         title_metadata = dataSet[:-4].split('_') # turn title into list of strings with dataset information
 
@@ -110,11 +115,11 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         
         
         # keyence laser calibration
-        dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*1000
+        # dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*1000
         
         
         ## U-E laser calibration
-        # dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*.2
+        dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*1000 #*.2 #as of 3/8/2021, data is saved in mm already. 
     
     
 
@@ -195,8 +200,8 @@ def getSingleInstance(dictOfDF):
 #         fs = dictOfDF_single.get(key).attrs['fs']
 #         low = dictOfDF_single.get(key).attrs['freq start']
 #         high = dictOfDF_single.get(key).attrs['freq stop']
-#         duration = dictOfDF_single.get(key).attrs['duration up']
-#         sweepType = dictOfDF_single.get(key).attrs['sweep type']
+#         duration = 30
+#         sweepType = 'log'
 #         T = fs * duration
 #         w1 = low / fs * 2*np.pi
 #         w2 = high / fs * 2*np.pi
@@ -256,7 +261,7 @@ def normalize(dictOfDF_single):
 
 
 
-def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict, label):
+def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict, label, timing):
     """
 
 
@@ -280,32 +285,38 @@ def saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict
 
 
     for count, dataSet in enumerate(dataOrganizationDict.get(subfolderName)):
-        os.mkdir(main_data_path/subfolderName/dataSet[:-4])
-        # get every dataseries out of the dataframe and normalize them.
-        TargetDir = str(main_data_path/subfolderName/dataSet[:-4])+'\\'
+        
+        # # for creating a unique folder for every dataset: 
+        # os.mkdir(main_data_path/subfolderName/dataSet[:-4])
+        # TargetDir = str(main_data_path/subfolderName/dataSet[:-4])+'\\'
+        
+        # for putting .wav files into the same folder as the .txt data. 
+        TargetDir = str(main_data_path/subfolderName)+'\\'
+        
         fs = dictOfDF_single.get(dataSet[:-4]).attrs['fs']
         # fs = 48000
         
-        # #V_diff
-        # V_diff = dictOfDF_single.get(dataSet[:-4])['V_diff']
-        # write(TargetDir+'V_diff.wav', fs, V_diff)
+        # #V_input
+        # V_input = dictOfDF_single.get(dataSet[:-4])['V_input']
+        # write(TargetDir+'V_input.wav', fs, V_input)
 
 
         # #V_ACbias
         # V_ACbias_norm = dictOfDF_single.get(dataSet[:-4])['V_ACbias']
         # write(TargetDir+'V_ACbias_norm.wav', fs, V_ACbias_norm)
-        #V_elec+
-        V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']
-        write(TargetDir+'V_elec_p__{}.wav'.format(label), fs, V_elec_p_norm)
+        # #V_elec+
+        # V_elec_p_norm = dictOfDF_single.get(dataSet[:-4])['V_elec+']
+        # write(TargetDir+'V_elec_p__{}.wav'.format(label), fs, V_elec_p_norm)
         # #V_elec-
         # V_elec_n_norm = dictOfDF_single.get(dataSet[:-4])['V_elec-']
         # write(TargetDir+'V_elec_n_norm.wav', fs, V_elec_n_norm)
-        # #D_laser
+        #D_laser
         D_laser_norm = dictOfDF_single.get(dataSet[:-4])['D_laser']
-        write(TargetDir+'D_laser_{}.wav'.format(label), fs, D_laser_norm)
-        #Mic_out
-        V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
-        write(TargetDir+'Mic_out_norm_{}.wav'.format(label), fs, V_Mic_out_norm)
+        write(TargetDir+'D_{}_{}V_{}_{}.wav'.format(label, math.trunc(dictOfDF.get(dataSet[:-4]).attrs.get('Vrms')), 
+                                                   math.trunc(dictOfDF.get(dataSet[:-4]).attrs.get('bias')), timing), fs, D_laser_norm)
+        # #Mic_out
+        # V_Mic_out_norm = dictOfDF_single.get(dataSet[:-4])['Mic_out']
+        # write(TargetDir+'Mic_out_norm_{}.wav'.format(label), fs, V_Mic_out_norm)
 
 
 def insertTiming(dictOfDF_norm):
@@ -394,6 +405,63 @@ def singleInstanceFromTimingRef(dictOfDF):
     return dictOfDF_NoTiming
 
 
+def plotTimeDomain(dictOfDF, path, sample, dataSet, voltage):
+    """
+    
+
+    Parameters
+    ----------
+    dictOfDF : dictionary of DataFrames
+        Contains all sweep data from 
+    sample : String
+        number of sample that data will be plotted from
+    dataSet : String
+        D_laser, V_input, or V_input_rev
+    voltage : TYPE
+        Sweep Voltage (35, 70, 140, 220) 
+
+    Returns
+    -------
+    plots time domain figure using matplotlib and pandas of the specified dataSet of the given sample at a given voltage
+
+    """
+    
+    # if len(voltage) == 1:
+    #     voltage = [voltage]
+    
+    for v in voltage:
+        
+        key = '{}_Vrms_{}_bias_600_freq_20_20000_sweep_log_fs_48000_R'.format(sample, v)
+        
+        TimeDomain_plot = plt.figure(figsize=(9,5), dpi=100)
+        TimeDomain_pltax = TimeDomain_plot.add_subplot(111)
+        plt.gcf().subplots_adjust(bottom=0.2)
+        
+        if dictOfDF.get(key) is None:
+            print('breakOut')
+            break
+        
+        TimeDomain_pltax = dictOfDF.get(key).plot(x = 'Time', y = dataSet, label = '{}_{}V'.format(sample, v), 
+                                                       grid=True, ax = TimeDomain_pltax)
+        if dataSet == 'D_laser':
+            TimeDomain_pltax.set_xlabel('Time (s)')
+            TimeDomain_pltax.set_ylabel('Displacement (\u03BCm)')
+            plt.title('Time Domain Displacement')
+        elif dataSet == 'V_input':
+            TimeDomain_pltax.set_xlabel('Time (s)')
+            TimeDomain_pltax.set_ylabel('Amp input Voltage (V)')
+            plt.title('Time Domain Voltage Input')
+        elif dataSet == 'V_input_rev':
+            TimeDomain_pltax.set_xlabel('Time (s)')
+            TimeDomain_pltax.set_ylabel('Voltage (V)')
+            plt.title('Time Domain Reverse Filter')
+        TimeDomain_plot.savefig(path + '\\' + sample + ' before' + '\\' + sample + '_' + dataSet + ' at ' + str(v) + ' V.png')
+        
+
+
+
+
+
 #%%
 if __name__ == '__main__':
 
@@ -409,28 +477,81 @@ if __name__ == '__main__':
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200826 - Open face test, real displacement')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200826 - stax diaphragm')
     # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200903 - differential amp measurement')
-    main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200901 - New Stacking fixture')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20200901 - New Stacking fixture')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20201108 - Samsung tests')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20201110 - Sennheiser Driver in free air')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20201118 - Samsung 100hr test 2')
+    # main_data_path = Path('G:\\My Drive\\Dynamic Voltage Measurement\\20201202 - 1009-2, 0909-8, 0909-9, 0908-1')
+    # main_data_path = Path('G:\\Shared drives\\16mm Coin\\Coin data\\20201202 - 0908-1')
+    
+    
+    #%%  batch creation of time domain plots and .wav files of displacement data
+    
+# finds all the coins tested on "data_date" and creates a list of the coin ID numbers
+    base_path = 'G:\\Shared drives\\16mm Coin\\Coin data'
+    data_date = '20210307'
+    
+# gets all folders of coin data into a single list named "samples"
+    samples = os.listdir(base_path)
+    if 'desktop.ini' in samples:
+        samples.remove('desktop.ini')
+    if 'Free air resonance tracking.xlsx' in samples:
+        samples.remove('Free air resonance tracking.xlsx')
+    if '~$Free air resonance tracking.xlsx' in samples:
+        samples.remove('~$Free air resonance tracking.xlsx')
+    
+# creates a list of the coin data collected on "data_date"
+    folderName = []
+    CoinDataFrom_data_date = []
+    for s in samples:
+        folderName.append(s.split(' - '))
+        if s.split(' - ')[0] == data_date:
+            CoinDataFrom_data_date.append(s.split(' - ')[1])
+            
+# for geting time domain plots and .wav files of data saved to google drive
+    for coin in CoinDataFrom_data_date:
+        print(coin)
+        totalPath = base_path + '\\' + data_date + ' - ' + coin
+        subfolderName = totalPath.split()[-1]+' before'
+        main_data_path = Path(totalPath)
+        
+        dataOrganizationDict = getFileOrg(main_data_path)
+        dictOfDF = makeDictofDF(dataOrganizationDict, subfolderName)
+        plotTimeDomain(dictOfDF, totalPath, subfolderName.split()[0], 'D_laser', [35, 70, 140, 220])
+        plt.close('all')
+        
+        # saves 'D_laser' data into .wav file for import into REW
+        wavName = subfolderName.split()[0]
+        if subfolderName.split()[1] == 'before':
+            timing = 'b4'
+        else:
+            timing = 'af'
+        saveWAV(dictOfDF, main_data_path, subfolderName, dataOrganizationDict, wavName, timing)
+    
+    
+#%% Single coin's processing
+    temp_path = 'G:\\Shared drives\\16mm Coin\\Coin data\\20210307 - 0103-3'
+    # temp = 'G:\\Shared drives\\16mm Coin\\Coin data\\20201118 - samsung 2 - 0909-1'
+    subfolderName = temp_path.split()[-1]+' before'
+    main_data_path = Path(temp_path)
 
 
     ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
     dataOrganizationDict = getFileOrg(main_data_path)
-    print('Datasets are grouped in the following subfolders: \n' + ', \n'.join(dataOrganizationDict.keys()))
-    subfolderName = input('Please select and type out a dataset to analyze from above: \n\n')
+    # print('Datasets are grouped in the following subfolders: \n' + ', \n'.join(dataOrganizationDict.keys()))
+    # subfolderName = input('Please select and type out a dataset to analyze from above: \n\n')
+    
     dictOfDF = makeDictofDF(dataOrganizationDict, subfolderName)
+    plotTimeDomain(dictOfDF, totalPath, subfolderName.split()[0], 'D_laser', [35, 70, 140, 220])
     
     
-    dictOfDF_single = dictOfDF
-    
-
-
-    # ##### normalize all data #####
-    # dictOfDF_norm = normalize(dictOfDF_single)
-    ##### Add timing to data without clear timing signals #####
-    # dictOfDF_timed = insertTiming(dictOfDF_single)
-    #%%
-    # dictOfDF_norm = normalize(dictOfDF_single)
-
-    saveWAV(dictOfDF_single, main_data_path, subfolderName, dataOrganizationDict, '022820-2')
+    # saves displacment data into a wav file for import into REW
+    wavName = subfolderName.split()[0]
+    if subfolderName.split()[1] == 'before':
+        timing = 'b4'
+    else:
+        timing = 'af'
+    saveWAV(dictOfDF, main_data_path, subfolderName, dataOrganizationDict, wavName, timing)
 
 
 #%%
@@ -463,103 +584,107 @@ if __name__ == '__main__':
     spectra_ax.set_title('V_ACbias for '+key)
 
 
-    #%% for plotting laser and bias data on the same plot and mic data separately.
-    # def plotTimeData(dataDict):
+#     #%% for plotting laser and bias data on the same plot and mic data separately.
+#     # def plotTimeData(dataDict):
 
-for count, key in enumerate(dictOfDF):
+# for count, key in enumerate(dictOfDF):
 
-    Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
-    V_D_pltax = Vbias_D_laserplt.add_subplot(111)
+#     Vbias_D_laserplt = plt.figure(figsize=(12,6), dpi=100)
+#     V_D_pltax = Vbias_D_laserplt.add_subplot(111)
     
     
     
-    # V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
-    #                                            secondary_y=True, ax = V_D_pltax)
-    # V_ACbiasAx.set_ylabel('AC Bias Voltage (V)')
-    D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', title='disp for {}'.format(key),grid=True, ax = V_D_pltax)
-    D_laserAx.set_xlabel('Time (s)')
-    D_laserAx.set_ylabel('Center Displacement (um)')
+#     # V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
+#     #                                            secondary_y=True, ax = V_D_pltax)
+#     # V_ACbiasAx.set_ylabel('AC Bias Voltage (V)')
+#     D_laserAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'D_laser', title='disp for {}'.format(key),grid=True, ax = V_D_pltax)
+#     D_laserAx.set_xlabel('Time (s)')
+#     D_laserAx.set_ylabel('Center Displacement (um)')
     
-    V_inplt = plt.figure(figsize=(12,6), dpi=100)
-    V_in_pltax = V_inplt.add_subplot(111)
-    V_inAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_elec-', title='V_input for {}'.format(key),grid=True, ax = V_in_pltax)
-    V_inAx.set_xlabel('Time (s)')
-    V_inAx.set_ylabel('Electrode Voltage (V)')
+#     V_inplt = plt.figure(figsize=(12,6), dpi=100)
+#     V_in_pltax = V_inplt.add_subplot(111)
+#     V_inAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_elec-', title='V_input for {}'.format(key),grid=True, ax = V_in_pltax)
+#     V_inAx.set_xlabel('Time (s)')
+#     V_inAx.set_ylabel('Electrode Voltage (V)')
     
     
-    # Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
-    # Mic_pltax = Mic_outplt.add_subplot(111)
-    # Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True,
-    #                                           title='Mic Output for {}'.format(key), ax = Mic_pltax)
-    # Mic_outAx.set_ylabel('Mic Output (V)')
-    # Mic_outAx.set_xlabel('Time (s)')
+#     # Mic_outplt = plt.figure(figsize=(12,6), dpi=100)
+#     # Mic_pltax = Mic_outplt.add_subplot(111)
+#     # Mic_outAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'Mic_out', grid=True,
+#     #                                           title='Mic Output for {}'.format(key), ax = Mic_pltax)
+#     # Mic_outAx.set_ylabel('Mic Output (V)')
+#     # Mic_outAx.set_xlabel('Time (s)')
 
-#%% 
+# #%% 
 
-newPlt = plt.figure(figsize=(12,6), dpi=100)
-movAvgAx = newPlt.add_subplot(111)
-D_laserAx = dictOfDF.get(key).plot(x = 'Time', y = 'D_laser', title='Creating "beats" using moving average',grid=True, ax = movAvgAx)
-D_laserAx.set_xlabel('Time (s)')
-D_laserAx.set_ylabel('Center Displacement (mm)')
-plt.plot(dictOfDF.get(key)['Time'], dictOfDF.get(key)['D_laser'].rolling(2048).mean())
-movAvgAx.legend(['Raw Data', '2048 pt. moving average'])
+# newPlt = plt.figure(figsize=(12,6), dpi=100)
+# movAvgAx = newPlt.add_subplot(111)
+# D_laserAx = dictOfDF.get(key).plot(x = 'Time', y = 'D_laser', title='Creating "beats" using moving average',grid=True, ax = movAvgAx)
+# D_laserAx.set_xlabel('Time (s)')
+# D_laserAx.set_ylabel('Center Displacement (mm)')
+# plt.plot(dictOfDF.get(key)['Time'], dictOfDF.get(key)['D_laser'].rolling(2048).mean())
+# movAvgAx.legend(['Raw Data', '2048 pt. moving average'])
 
-#%% comparing 3 locations along diaphragm
+# #%% comparing 3 locations along diaphragm
 
-# # #Closed faced - center of diaphragm
-# # closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
-# #Open faced - center of diaphragm
-# center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter')
-# #Open faced - 3mm closer to table
-# ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable')
-# #Open faced - 3mm farther from table
-# FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
+# # # #Closed faced - center of diaphragm
+# # # closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
+# # #Open faced - center of diaphragm
+# # center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter')
+# # #Open faced - 3mm closer to table
+# # ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable')
+# # #Open faced - 3mm farther from table
+# # FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
 
-# # create dictionary from data from above:
-# openFace = {}
-# # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed'] = closed_center
-# openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter'] = center
-# openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable'] = ClosertoHole
-# openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable'] = FarthertoHole
+# # # create dictionary from data from above:
+# # openFace = {}
+# # # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed'] = closed_center
+# # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter'] = center
+# # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable'] = ClosertoHole
+# # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable'] = FarthertoHole
 
-# dictOfDF_timeSync = singleInstanceFromTimingRef(openFace)
+# # dictOfDF_timeSync = singleInstanceFromTimingRef(openFace)
 
-dictOfDF_timeSync = singleInstanceFromTimingRef(dictOfDF)
+# dictOfDF_timeSync = singleInstanceFromTimingRef(dictOfDF)
 
-D_laserplt = plt.figure(figsize=(12,6), dpi=100)
-V_D_pltax = D_laserplt.add_subplot(111)
-# V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
-#                                           title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
-# V_ACbiasAx.set_ylabel('Bias Voltage (V)')
+# D_laserplt = plt.figure(figsize=(12,6), dpi=100)
+# V_D_pltax = D_laserplt.add_subplot(111)
+# # V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
+# #                                           title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
+# # V_ACbiasAx.set_ylabel('Bias Voltage (V)')
 
-for count, key in enumerate(dictOfDF_timeSync):
-    #remove offset in D_laser data and begin time at 0
-    dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].sub(dictOfDF_timeSync.get(key)['D_laser'].mean())
-    dictOfDF_timeSync.get(key)['Time'] = dictOfDF_timeSync.get(key)['Time'].sub(dictOfDF_timeSync.get(key)['Time'][0])
+# for count, key in enumerate(dictOfDF_timeSync):
+#     #remove offset in D_laser data and begin time at 0
+#     dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].sub(dictOfDF_timeSync.get(key)['D_laser'].mean())
+#     dictOfDF_timeSync.get(key)['Time'] = dictOfDF_timeSync.get(key)['Time'].sub(dictOfDF_timeSync.get(key)['Time'][0])
     
-    dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].rolling(20).mean()
-    dictOfDF_timeSync.get(key)['Time'] = dictOfDF_timeSync.get(key)['Time'].rolling(20).mean()
+#     dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].rolling(20).mean()
+#     dictOfDF_timeSync.get(key)['Time'] = dictOfDF_timeSync.get(key)['Time'].rolling(20).mean()
     
-    D_laserAx = dictOfDF_timeSync.get(key).plot(x = 'Time', y = 'D_laser', grid=True, title='',ax = V_D_pltax,
-                                                label = dictOfDF_timeSync.get(key).attrs['Location (mm)'])
-    D_laserAx.set_ylabel('Displacement (um)')
-    D_laserAx.set_xlabel('Time (s)')
+#     D_laserAx = dictOfDF_timeSync.get(key).plot(x = 'Time', y = 'D_laser', grid=True, title='',ax = V_D_pltax,
+#                                                 label = dictOfDF_timeSync.get(key).attrs['Location (mm)'])
+#     D_laserAx.set_ylabel('Displacement (um)')
+#     D_laserAx.set_xlabel('Time (s)')
 
 
-#%% Averaging - for later
 
-    # ##### Steps through all DataFrames in dictOfDF and averages data from frequency sweeps
-    # dictOfDF_averaged = {}
 
-    # # for loop to step through all the different runs
-    # for run in dictOfDF:
-    #     print(run)
 
-    #     # for loop for averaging the 4 different sweeps - prohibitively slow - need to revisit ***
-    #     temp = pd.DataFrame()
-    #     for i in range(0, 1000):
-    #         temp = temp.append((dictOfDF.get(run).iloc[dictOfDF.get(run).Trigger.diff().idxmax(axis=0)+i::500000,:].mean()).transpose(), ignore_index=True)
-    #         dictOfDF_averaged = {run: temp}
-    #         print(i)
-    #     break
-    # # df = temp.append(pd.DataFrame(dictOfDF.get(run).iloc[dictOfDF.get(run).Trigger.diff().idxmax(axis=0)+i::500000,:].mean()).transpose())
+# #%%
+
+# plt_0324_1_ax = d_70V.plot(x = 'Time', y = 'D_laser', title = '0324-1 70V', legend = False, grid = 'both')
+# plt_0324_1_ax.set_ylabel('Displacement (mm)')
+# plt_0324_1_ax.set_xlabel('Time (s)')
+
+# plt_0915_1_ax = d_0915_1_70V.plot(x = 'Time', y = 'D_laser', title = '0915-1 70V', legend = False, grid = 'both')
+# plt_0915_1_ax.set_ylabel('Displacement (mm)')
+# plt_0915_1_ax.set_xlabel('Time (s)')
+
+# plt_0915_2_ax = d_0915_2_70V.plot(x = 'Time', y = 'D_laser', title = '0915-2 70V', legend = False, grid = 'both')
+# plt_0915_2_ax.set_ylabel('Displacement (mm)')
+# plt_0915_2_ax.set_xlabel('Time (s)')
+
+
+
+
+
