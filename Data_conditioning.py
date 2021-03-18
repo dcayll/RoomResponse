@@ -119,7 +119,7 @@ def makeDictofDF(dataOrganizationDict, subfolderName):
         
         
         ## U-E laser calibration
-        dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*1000 #*.2 #as of 3/8/2021, data is saved in mm already. 
+        dictOfDF.get(dataSet[:-4])['D_laser'] = (dictOfDF.get(dataSet[:-4])['D_laser']-dictOfDF.get(dataSet[:-4])['D_laser'][0:144001].mean())*1000#*.2 #as of 3/8/2021, data is saved in mm in labview 
     
     
 
@@ -455,7 +455,7 @@ def plotTimeDomain(dictOfDF, path, sample, dataSet, voltage):
             TimeDomain_pltax.set_xlabel('Time (s)')
             TimeDomain_pltax.set_ylabel('Voltage (V)')
             plt.title('Time Domain Reverse Filter')
-        TimeDomain_plot.savefig(path + '\\' + sample + ' before' + '\\' + sample + '_' + dataSet + ' at ' + str(v) + ' V.png')
+        # TimeDomain_plot.savefig(path + '\\' + sample + ' before' + '\\' + sample + '_' + dataSet + ' at ' + str(v) + ' V.png')
         
 
 
@@ -530,22 +530,17 @@ if __name__ == '__main__':
     
     
 #%% Single coin's processing
-    temp_path = 'G:\\Shared drives\\16mm Coin\\Coin data\\20210307 - 0103-3'
-    # temp = 'G:\\Shared drives\\16mm Coin\\Coin data\\20201118 - samsung 2 - 0909-1'
+    # imports data from txt files
+    temp_path = 'G:\\Shared drives\\16mm Coin\\Coin data\\20210307 - 0106-3'
     subfolderName = temp_path.split()[-1]+' before'
     main_data_path = Path(temp_path)
-
-
-    ##### Prompts user for data set desired to process and creates a dictionary of DataFrames full of relevant data #####
     dataOrganizationDict = getFileOrg(main_data_path)
-    # print('Datasets are grouped in the following subfolders: \n' + ', \n'.join(dataOrganizationDict.keys()))
-    # subfolderName = input('Please select and type out a dataset to analyze from above: \n\n')
-    
     dictOfDF = makeDictofDF(dataOrganizationDict, subfolderName)
+    
+    # plots time domain data of a single coin
     plotTimeDomain(dictOfDF, totalPath, subfolderName.split()[0], 'D_laser', [35, 70, 140, 220])
     
-    
-    # saves displacment data into a wav file for import into REW
+    #%% saves displacment data into a wav file for import into REW
     wavName = subfolderName.split()[0]
     if subfolderName.split()[1] == 'before':
         timing = 'b4'
@@ -567,21 +562,21 @@ if __name__ == '__main__':
 
     #%% for plotting frequency spectra
 
-    key = 's8_Vrms_35.3_bias_600_freq_20_20000_sweep_log_fs_48000_duration_30_0_Nsweeps_1'
-    I = fftconvolve( dictOfDF_revFilt.get(key)['V_ACbias'], dictOfDF_revFilt.get(key)['V_input_rev'].iloc[::-1].reset_index(drop=True), mode = 'full')
-    I = I[dictOfDF_revFilt.get(key)['V_input_rev'].shape[0]:dictOfDF_revFilt.get(key)['V_input_rev'].shape[0]*2+1]
-    Ifft = fft(I)
-    # x = np.logspace(0,np.log10(25000), Ifft.size//2)
-    x = scipy.fftpack.fftfreq(Ifft.size, 1 / 50e3)
-    spectra = plt.figure()
-    spectra_ax = spectra.add_subplot(111)
-    spectra_ax.plot(x[:x.size//2], abs(Ifft)[:Ifft.size//2])
-    # plt.plot(x, abs(Ifft)[:Ifft.size//2])
-    spectra_ax.set_xscale('log')
-    spectra_ax.set_xlabel('Frequency (Hz)')
-    spectra_ax.set_ylabel('Relative Amplitude')
-    spectra_ax.set_xlim((20, 20000))
-    spectra_ax.set_title('V_ACbias for '+key)
+    # key = 's8_Vrms_35.3_bias_600_freq_20_20000_sweep_log_fs_48000_duration_30_0_Nsweeps_1'
+    # I = fftconvolve( dictOfDF_revFilt.get(key)['V_ACbias'], dictOfDF_revFilt.get(key)['V_input_rev'].iloc[::-1].reset_index(drop=True), mode = 'full')
+    # I = I[dictOfDF_revFilt.get(key)['V_input_rev'].shape[0]:dictOfDF_revFilt.get(key)['V_input_rev'].shape[0]*2+1]
+    # Ifft = fft(I)
+    # # x = np.logspace(0,np.log10(25000), Ifft.size//2)
+    # x = scipy.fftpack.fftfreq(Ifft.size, 1 / 50e3)
+    # spectra = plt.figure()
+    # spectra_ax = spectra.add_subplot(111)
+    # spectra_ax.plot(x[:x.size//2], abs(Ifft)[:Ifft.size//2])
+    # # plt.plot(x, abs(Ifft)[:Ifft.size//2])
+    # spectra_ax.set_xscale('log')
+    # spectra_ax.set_xlabel('Frequency (Hz)')
+    # spectra_ax.set_ylabel('Relative Amplitude')
+    # spectra_ax.set_xlim((20, 20000))
+    # spectra_ax.set_title('V_ACbias for '+key)
 
 
 #     #%% for plotting laser and bias data on the same plot and mic data separately.
@@ -614,77 +609,5 @@ if __name__ == '__main__':
 #     #                                           title='Mic Output for {}'.format(key), ax = Mic_pltax)
 #     # Mic_outAx.set_ylabel('Mic Output (V)')
 #     # Mic_outAx.set_xlabel('Time (s)')
-
-# #%% 
-
-# newPlt = plt.figure(figsize=(12,6), dpi=100)
-# movAvgAx = newPlt.add_subplot(111)
-# D_laserAx = dictOfDF.get(key).plot(x = 'Time', y = 'D_laser', title='Creating "beats" using moving average',grid=True, ax = movAvgAx)
-# D_laserAx.set_xlabel('Time (s)')
-# D_laserAx.set_ylabel('Center Displacement (mm)')
-# plt.plot(dictOfDF.get(key)['Time'], dictOfDF.get(key)['D_laser'].rolling(2048).mean())
-# movAvgAx.legend(['Raw Data', '2048 pt. moving average'])
-
-# #%% comparing 3 locations along diaphragm
-
-# # # #Closed faced - center of diaphragm
-# # # closed_center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed')
-# # #Open faced - center of diaphragm
-# # center = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter')
-# # #Open faced - 3mm closer to table
-# # ClosertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable')
-# # #Open faced - 3mm farther from table
-# # FarthertoHole = dictOfDF_single.get('s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable')
-
-# # # create dictionary from data from above:
-# # openFace = {}
-# # # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Closed'] = closed_center
-# # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Opencenter'] = center
-# # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmTowardsTable'] = ClosertoHole
-# # openFace['s9_Vrms_176.7_bias_600_freq_20_20000_sweep_log_fs_48000_timingRef_Open3mmAwayTable'] = FarthertoHole
-
-# # dictOfDF_timeSync = singleInstanceFromTimingRef(openFace)
-
-# dictOfDF_timeSync = singleInstanceFromTimingRef(dictOfDF)
-
-# D_laserplt = plt.figure(figsize=(12,6), dpi=100)
-# V_D_pltax = D_laserplt.add_subplot(111)
-# # V_ACbiasAx = dictOfDF_single.get(key).plot(x = 'Time', y = 'V_ACbias', grid=True,
-# #                                           title='V_bias and Center Displacement for {}'.format(key), ax = V_D_pltax)
-# # V_ACbiasAx.set_ylabel('Bias Voltage (V)')
-
-# for count, key in enumerate(dictOfDF_timeSync):
-#     #remove offset in D_laser data and begin time at 0
-#     dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].sub(dictOfDF_timeSync.get(key)['D_laser'].mean())
-#     dictOfDF_timeSync.get(key)['Time'] = dictOfDF_timeSync.get(key)['Time'].sub(dictOfDF_timeSync.get(key)['Time'][0])
-    
-#     dictOfDF_timeSync.get(key)['D_laser'] = dictOfDF_timeSync.get(key)['D_laser'].rolling(20).mean()
-#     dictOfDF_timeSync.get(key)['Time'] = dictOfDF_timeSync.get(key)['Time'].rolling(20).mean()
-    
-#     D_laserAx = dictOfDF_timeSync.get(key).plot(x = 'Time', y = 'D_laser', grid=True, title='',ax = V_D_pltax,
-#                                                 label = dictOfDF_timeSync.get(key).attrs['Location (mm)'])
-#     D_laserAx.set_ylabel('Displacement (um)')
-#     D_laserAx.set_xlabel('Time (s)')
-
-
-
-
-
-# #%%
-
-# plt_0324_1_ax = d_70V.plot(x = 'Time', y = 'D_laser', title = '0324-1 70V', legend = False, grid = 'both')
-# plt_0324_1_ax.set_ylabel('Displacement (mm)')
-# plt_0324_1_ax.set_xlabel('Time (s)')
-
-# plt_0915_1_ax = d_0915_1_70V.plot(x = 'Time', y = 'D_laser', title = '0915-1 70V', legend = False, grid = 'both')
-# plt_0915_1_ax.set_ylabel('Displacement (mm)')
-# plt_0915_1_ax.set_xlabel('Time (s)')
-
-# plt_0915_2_ax = d_0915_2_70V.plot(x = 'Time', y = 'D_laser', title = '0915-2 70V', legend = False, grid = 'both')
-# plt_0915_2_ax.set_ylabel('Displacement (mm)')
-# plt_0915_2_ax.set_xlabel('Time (s)')
-
-
-
 
 
